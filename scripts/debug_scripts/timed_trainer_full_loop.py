@@ -4,23 +4,24 @@ import shutil
 
 import numpy as np
 import torch
+import cProfile
 
 from environments.select_env import select_env
 from algorithms.select_algo import select_algo
 from helpers.graphs import plot_state_graph, plot_reward_graph
 
-project_dir = "C:\\dev\\University\\MECH3890\\environment-model"
-checkpoint_path = "C:\\dev\\University\\MECH3890\\environment-model\\models\\training_9\\model"
+project_dir = "C:/dev/University/MECH3890/environment-model"
+checkpoint_path = "../../models/training_9/model"
 torch.manual_seed(42)  # What is the meaning of life the universe and everything?
 
-training_name = "speed_test"
+training_name = "test"
 env_name = "FixedMassEnvironment"
 algorithm_name = "JIT_DDPG"
-notes = "testing implementation of JIT DDPG"
+notes = "continuing training_9"
 
 save_frequency = 100
 num_epochs = 4001
-epoch = 0
+epoch = 2401
 alpha = 0.00008
 beta = 0.0008
 gamma = 0.95
@@ -29,6 +30,52 @@ tau = 0.001
 batch_size = 200
 layer1_size = 400
 layer2_size = 300
+
+
+def train(save_frequency, num_epochs, epoch, env, agent, score_history, best_score, model_plots_dir):
+    print('-' * 10)
+    print('Epoch {}/{}'.format(epoch, num_epochs - 1))
+    state = env.reset()
+    terminated = False
+    truncated = False
+    record = False
+    score = 0
+    epoch_history = []
+    agent.noise.reset()
+
+    if epoch % save_frequency == 0 and epoch != 0:
+        record = True
+
+    while not (terminated or truncated):
+        if record:
+            epoch_history.append(state)
+
+        action = agent.choose_action(state)
+        new_state, reward, terminated, truncated, info = env.step(action)
+        agent.remember(state, action, reward, new_state, terminated)
+        agent.learn()
+        state = new_state
+        score += reward
+        terminated = True
+
+    score_history.append(score)
+    avg_score = np.mean(score_history[-100:])
+
+    if epoch > 30:
+        if avg_score > best_score:
+            best_score = avg_score
+            agent.save_best_models()
+
+    if epoch % save_frequency == 0 and epoch != 0:
+        # Plot Graphs
+        plot_state_graph(epoch_history, epoch, model_plots_dir, env.observation_space.bounds())
+        plot_reward_graph(score_history, model_plots_dir)
+
+        # Save checkpoint
+        agent.save_models()
+
+    print(f"Steps: {env.env_step}\tScore: {score:.1f}\tAverage Score: {avg_score:.1f}")
+
 
 if __name__ == "__main__":
     print("-=| Starting training |=-")
@@ -84,45 +131,5 @@ if __name__ == "__main__":
     score_history = []
     state_history = []
 
-    for epoch in range(epoch, num_epochs):
-        print('-' * 10)
-        print('Epoch {}/{}'.format(epoch, num_epochs - 1))
-        state = env.reset()
-        terminated = False
-        truncated = False
-        record = False
-        score = 0
-        epoch_history = []
-        agent.noise.reset()
-
-        if epoch % save_frequency == 0 and epoch != 0:
-            record = True
-
-        while not (terminated or truncated):
-            if record:
-                epoch_history.append(state)
-
-            action = agent.choose_action(state)
-            new_state, reward, terminated, truncated, info = env.step(action)
-            agent.remember(state, action, reward, new_state, terminated)
-            agent.learn()
-            state = new_state
-            score += reward
-
-        score_history.append(score)
-        avg_score = np.mean(score_history[-100:])
-
-        if epoch > 30:
-            if avg_score > best_score:
-                best_score = avg_score
-                agent.save_best_models()
-
-        if epoch % save_frequency == 0 and epoch != 0:
-            # Plot Graphs
-            plot_state_graph(epoch_history, epoch, model_plots_dir, env.observation_space.bounds())
-            plot_reward_graph(score_history, model_plots_dir)
-
-            # Save checkpoint
-            agent.save_models()
-
-        print(f"Steps: {env.env_step}\tScore: {score:.1f}\tAverage Score: {avg_score:.1f}")
+    cProfile.run('train(save_frequency, num_epochs, epoch, env, agent, score_history, best_score, model_plots_dir)')
+    # train(save_frequency, num_epochs, epoch, env, agent, score_history, best_score, model_plots_dir)

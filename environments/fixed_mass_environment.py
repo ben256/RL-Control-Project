@@ -185,7 +185,9 @@ class FixedMassEnvironment:
 
     def initial_state(self):
         initial_x = np.random.choice([-300, -200, -100, 100, 200, 300])
-        initial_y = -500.0
+        # initial_x = 200
+        # initial_y = -500.0
+        initial_y = -545.0
         return np.array([initial_x, initial_y, 0.0, 0.0, 0.0, 0.0])
 
     def render(self):

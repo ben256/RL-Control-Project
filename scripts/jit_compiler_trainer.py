@@ -13,14 +13,14 @@ project_dir = "C:\\dev\\University\\MECH3890\\environment-model"
 checkpoint_path = "C:\\dev\\University\\MECH3890\\environment-model\\models\\training_9\\model"
 torch.manual_seed(42)  # What is the meaning of life the universe and everything?
 
-training_name = "speed_test"
+training_name = "jit_test"
 env_name = "FixedMassEnvironment"
 algorithm_name = "JIT_DDPG"
-notes = "testing implementation of JIT DDPG"
+notes = "jit_test"
 
 save_frequency = 100
 num_epochs = 4001
-epoch = 0
+epoch = 2401
 alpha = 0.00008
 beta = 0.0008
 gamma = 0.95

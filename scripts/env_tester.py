@@ -12,22 +12,22 @@ from helpers.graphs import plot_reward_graph_test, plot_state_graph_test
 project_dir = "C:\\dev\\University\\MECH3890\\environment-model"
 torch.manual_seed(42)  # What is the meaning of life the universe and everything?
 
-run_name = "change_sample_rate2"
+run_name = "test"
 env_name = "FixedMassEnvironment"
 algorithm_name = "DDPG"
-notes = "quarter sample rate, agent only chooses action every 4 steps"
+notes = "thrust sensitivity test"
 run_type = "test"
-external_model = "training_1"
+external_model = "test_model"
 
-overwrite = False
+overwrite = True
 load_from_checkpoint = True
 
-num_tests = 20
+num_tests = 100
 epoch = 0
-alpha = 0.0001
-beta = 0.001
+alpha = 0.00008
+beta = 0.0008
 gamma = 0.95
-sigma = 0.05
+sigma = 0.2
 tau = 0.001
 batch_size = 200
 layer1_size = 400
@@ -114,8 +114,7 @@ if __name__ == "__main__":
 
         while not (terminated or truncated):
             epoch_history.append(state)
-            if sample % 4 == 0:
-                action = agent.choose_action(state, eval=True)
+            action = agent.choose_action(state, eval=True)
             new_state, reward, terminated, truncated, info = env.step(action)
             state = new_state
             score += reward
@@ -126,7 +125,7 @@ if __name__ == "__main__":
 
         print('score %.1f' % score, 'steps %d' % len(epoch_history))
 
-    plot_state_graph_test(state_history, epoch, model_plots_dir, env.observation_space.bounds())
+    # plot_state_graph_test(state_history, epoch, model_plots_dir, env.observation_space.bounds())
     plot_reward_graph_test(score_history, model_plots_dir)
 
     average_score = np.mean(score_history)
@@ -134,9 +133,12 @@ if __name__ == "__main__":
     average_length = np.mean([len(x) for x in state_history])
 
     text_file = f"""Average score: {average_score}
-    Standard deviation: {std_score}
-    Average length: {average_length}"""
+Standard deviation: {std_score}
+Average length: {average_length}"""
 
     with open(os.path.join(training_dir, "results.txt"), "w") as f:
         f.write(text_file)
+
+    with open(os.path.join(training_dir, "score_history.txt"), "w") as f:
+        f.write(str(score_history))
 

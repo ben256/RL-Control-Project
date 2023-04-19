@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
+from torch import jit
 
 
 class OUActionNoise(object):
@@ -65,7 +66,7 @@ class ReplayBuffer(object):
         return states, actions, rewards, new_states, terminal
 
 
-class CriticNetwork(nn.Module):  # nn.module allows access to train/eval methods and parameters to be optimized
+class CriticNetwork(jit.ScriptModule):  # nn.module allows access to train/eval methods and parameters to be optimized
     def __init__(self, beta, input_dims, fc1_dims, fc2_dims, n_actions, name, model_dir, save_dir='model/'):
         super(CriticNetwork, self).__init__()  # calls nn.Module's __init__ method
         self.input_dims = input_dims
@@ -102,6 +103,7 @@ class CriticNetwork(nn.Module):  # nn.module allows access to train/eval methods
 
         self.to(self.device)
 
+    @jit.script_method
     def forward(self, state, action):
         # forward pass of the network
         # state is a tensor of shape (batch_size, 3, 96, 96)
@@ -119,21 +121,24 @@ class CriticNetwork(nn.Module):  # nn.module allows access to train/eval methods
 
         return state_action_value
 
+    @torch.jit.export
     def save_checkpoint(self):
         print('... saving checkpoint ...')
         T.save(self.state_dict(), self.checkpoint_file)  # Creates state dict where keys are parameter names and values are parameter tensors
 
+    @torch.jit.export
     def load_checkpoint(self):
         print('... loading checkpoint ...')
         self.load_state_dict(T.load(self.model_file))
 
+    @torch.jit.export
     def save_best(self):
         print('... saving best checkpoint ...')
         checkpoint_file = os.path.join(self.checkpoint_dir, self.name+'_best')
         T.save(self.state_dict(), checkpoint_file)
 
 
-class ActorNetwork(nn.Module):
+class ActorNetwork(jit.ScriptModule):
     # Similar to critic network but with different structure, no action value function
     def __init__(self, alpha, input_dims, fc1_dims, fc2_dims, n_actions, name, model_dir, save_dir='model/'):
         super(ActorNetwork, self).__init__()
@@ -169,6 +174,7 @@ class ActorNetwork(nn.Module):
 
         self.to(self.device)
 
+    @jit.script_method
     def forward(self, state):
         # state is a tensor of shape (batch_size, 3, 96, 96)
         # returns a tensor of shape (batch_size, n_actions)
@@ -182,14 +188,17 @@ class ActorNetwork(nn.Module):
 
         return mu
 
+    @torch.jit.export
     def save_checkpoint(self):
         print('... saving checkpoint ...')
         T.save(self.state_dict(), self.checkpoint_file)
 
+    @torch.jit.export
     def load_checkpoint(self):
         print('... loading checkpoint ...')
         self.load_state_dict(T.load(self.model_file))
 
+    @torch.jit.export
     def save_best(self):
         print('... saving best checkpoint ...')
         checkpoint_file = os.path.join(self.checkpoint_dir, self.name+'_best')
@@ -216,6 +225,21 @@ class Agent(object):
         self.target_actor = ActorNetwork(alpha, input_dims, layer1_size, layer2_size, n_actions=n_actions, name='target_actor', save_dir=save_dir, model_dir=model_dir)  # offpolicy hence target network
         self.critic = CriticNetwork(beta, input_dims, layer1_size, layer2_size, n_actions=n_actions, name='critic', save_dir=save_dir, model_dir=model_dir)
         self.target_critic = CriticNetwork(beta, input_dims, layer1_size, layer2_size, n_actions=n_actions, name='target_critic', save_dir=save_dir, model_dir=model_dir)
+
+        # example_input = T.randn(1, *input_dims).to(self.actor.device)
+        # self.actor = torch.jit.trace(self.actor, example_input)
+        # self.target_actor = torch.jit.trace(self.target_actor, example_input)
+        # example_input_critic = (example_input, T.randn(1, n_actions).to(self.critic.device))
+        # self.critic = torch.jit.trace(self.critic, example_input_critic)
+        # self.target_critic = torch.jit.trace(self.target_critic, example_input_critic)
+
+        input_dims_tensor = torch.rand(input_dims).to('cuda:0' if T.cuda.is_available() else 'cpu')
+        n_actions_tensor = torch.rand(n_actions).to('cuda:0' if T.cuda.is_available() else 'cpu')
+
+        self.actor = torch.jit.script(self.actor, input_dims_tensor)
+        self.target_actor = torch.jit.script(self.target_actor, input_dims_tensor)
+        self.critic = torch.jit.script(self.critic, input_dims_tensor, n_actions_tensor)
+        self.target_critic = torch.jit.script(self.target_critic, input_dims_tensor, n_actions_tensor)
 
         self.noise = OUActionNoise(mu=np.zeros(n_actions), sigma=sigma)  # Mean of rewards over time, 0 for now
 
