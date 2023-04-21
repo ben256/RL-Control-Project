@@ -15,7 +15,7 @@ checkpoint_path = "../../models/training_9/model"
 torch.manual_seed(42)  # What is the meaning of life the universe and everything?
 
 training_name = "test"
-env_name = "FixedMassEnvironment"
+env_name = "BaseEnvironment"
 algorithm_name = "JIT_DDPG"
 notes = "continuing training_9"
 

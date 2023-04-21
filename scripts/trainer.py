@@ -13,22 +13,22 @@ project_dir = "C:\\dev\\University\\MECH3890\\environment-model"
 checkpoint_path = "C:\\dev\\University\\MECH3890\\environment-model\\models\\training_9\\model"
 torch.manual_seed(42)  # What is the meaning of life the universe and everything?
 
-training_name = "speed_test"
-env_name = "FixedMassEnvironment"
-algorithm_name = "JIT_DDPG"
-notes = "testing implementation of JIT DDPG"
+training_name = "baseline"
+env_name = "BaseEnvironment"
+algorithm_name = "DDPG"
+notes = "baseline environment with DDPG"
 
-save_frequency = 100
-num_epochs = 4001
-epoch = 0
-alpha = 0.00008
-beta = 0.0008
-gamma = 0.95
-sigma = 0.2
-tau = 0.001
-batch_size = 200
-layer1_size = 400
-layer2_size = 300
+save_frequency = 100  # How often to save the model
+num_epochs = 1001  # Number of epochs to train for
+epoch = 0  # Current epoch
+alpha = 0.0001  # Actor learning rate
+beta = 0.001  # Critic learning rate
+gamma = 0.99  # Discount factor (closer to 1 = more future reward)
+sigma = 0.2  # Noise factor
+tau = 0.001  # Soft update factor
+batch_size = 200  # Batch size
+layer1_size = 400  # Size of first hidden layer
+layer2_size = 300  # Size of second hidden layer
 
 if __name__ == "__main__":
     print("-=| Starting training |=-")

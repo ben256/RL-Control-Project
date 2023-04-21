@@ -9,7 +9,7 @@ import numpy as np
 from helpers.box import Box
 
 
-class FixedMassEnvironment:
+class RewardShapingEnvironment:
     def __init__(self, gravity=1.62, mass=15000.0):
         # Initialize the state, and other parameters
         self.gravity = gravity

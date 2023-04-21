@@ -13,7 +13,7 @@ project_dir = "C:\\dev\\University\\MECH3890\\environment-model"
 torch.manual_seed(42)  # What is the meaning of life the universe and everything?
 
 run_name = "test"
-env_name = "FixedMassEnvironment"
+env_name = "BaseEnvironment"
 algorithm_name = "DDPG"
 notes = "thrust sensitivity test"
 run_type = "test"
