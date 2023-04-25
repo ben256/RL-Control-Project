@@ -18,7 +18,6 @@ from helpers.graphs import plot_state_graph, plot_reward_graph
 
 if __name__ == "__main__":
     start_time = time.time()
-    project_dir = os.path.abspath(os.getcwd())
     torch.manual_seed(42)  # What is the meaning of life the universe and everything?
 
     parser = argparse.ArgumentParser()
@@ -27,6 +26,7 @@ if __name__ == "__main__":
     parser.add_argument('--algorithm_name', type=str, default='DDPG')
     parser.add_argument('--notes', type=str, default='baseline environment with DDPG')
     parser.add_argument('--rm', type=str, default='rm1')
+    parser.add_argument('--use_temp_dir', type=bool, default=False)
     parser.add_argument('--save_frequency', type=int, default=100)
     parser.add_argument('--num_epochs', type=int, default=1001)
     parser.add_argument('--epoch', type=int, default=0)
@@ -45,6 +45,7 @@ if __name__ == "__main__":
     algorithm_name = args.algorithm_name
     notes = args.notes
     rm = args.rm
+    use_temp_dir = args.use_temp_dir
     save_frequency = args.save_frequency
     num_epochs = args.num_epochs
     epoch = args.epoch
@@ -60,12 +61,16 @@ if __name__ == "__main__":
     print("-=| Starting training |=-")
 
     # Get the device
-    # assert torch.cuda.is_available(), "CUDA is not available!"
+    assert torch.cuda.is_available(), "CUDA is not available!"
     device = torch.device("cuda")
     print("Using {} device".format(device))
 
     # Create the model directory if it doesn't exist
     print("Creating training folder")
+    if use_temp_dir:
+        project_dir = '$TMPDIR'
+    else:
+        project_dir = os.path.abspath(os.getcwd())
     training_dir = os.path.join(project_dir, "models", training_name)
     if os.path.exists(training_dir):
         shutil.rmtree(training_dir)
