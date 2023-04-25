@@ -4,14 +4,14 @@ from environments.reward_machine_environment import RewardMachineEnvironment
 from environments.reward_shaping_environment import RewardShapingEnvironment
 
 
-def select_env(env_name):
+def select_env(env_name, **kwargs):
     if env_name == "BaseEnvironment":
-        return BaseEnvironment()
+        return BaseEnvironment(**kwargs)
     if env_name == "RewardShapingEnvironment":
-        return RewardShapingEnvironment()
+        return RewardShapingEnvironment(**kwargs)
     if env_name == "GaussianRewardEnvironment":
-        return GaussianRewardEnvironment()
+        return GaussianRewardEnvironment(**kwargs)
     if env_name == "RewardMachineEnvironment":
-        return RewardMachineEnvironment()
+        return RewardMachineEnvironment(**kwargs)
     else:
         raise ValueError("Unknown environment name")

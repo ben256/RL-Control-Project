@@ -18,6 +18,7 @@ training_name = "RO_RM_9"
 env_name = "RewardMachineEnvironment"
 algorithm_name = "DDPG"
 notes = "DDPG, Reward Machine, changed batch size to 64, changed tau to 0.0005"
+rm_filepath = '../helpers/reward_machines/txt_files/t1.txt'
 
 load_from_checkpoint = False  # Whether to load from a checkpoint
 save_frequency = 100  # How often to save the model
@@ -60,7 +61,7 @@ if __name__ == "__main__":
     print(f"Created checkpoint and final directories")
 
     print("Creating environment and agent")
-    env = select_env(env_name)
+    env = select_env(env_name, rm_filepath=rm_filepath)
 
     agent = select_algo(algorithm_name, alpha=alpha, beta=beta, gamma=gamma, input_dims=env.observation_space.shape, tau=tau,
                         sigma=sigma, env=env, batch_size=batch_size, layer1_size=layer1_size, layer2_size=layer2_size,

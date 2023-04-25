@@ -406,7 +406,6 @@ class RewardMachineEnvironmentWrapper:
 
 
 class RewardMachineEnvironment(RewardMachineEnvironmentWrapper):
-    def __init__(self, **kwargs):
+    def __init__(self, rm_filepath, **kwargs):
         base_env = BaseRewardMachineEnvironment(**kwargs)
-        rm_files = ['../helpers/reward_machines/txt_files/t1.txt']
-        super().__init__(base_env, rm_files[0])
+        super().__init__(base_env, rm_filepath)
