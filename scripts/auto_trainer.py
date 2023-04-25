@@ -1,8 +1,8 @@
 import json
+import math
 import os
 import shutil
 
-import numpy as np
 import torch
 import argparse
 
@@ -17,7 +17,7 @@ if __name__ == "__main__":
     torch.manual_seed(42)  # What is the meaning of life the universe and everything?
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--training_name', type=str, default='baseline')
+    parser.add_argument('--training_name', type=str, default='training_1')
     parser.add_argument('--env_name', type=str, default='BaseEnvironment')
     parser.add_argument('--algorithm_name', type=str, default='DDPG')
     parser.add_argument('--notes', type=str, default='baseline environment with DDPG')
@@ -123,7 +123,7 @@ if __name__ == "__main__":
             score += reward
 
         score_history.append(score)
-        avg_score = np.mean(score_history[-100:])
+        avg_score = math.average(score_history[-100:])
 
         if epoch > 30:
             if avg_score > best_score:

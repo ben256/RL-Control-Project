@@ -6,10 +6,10 @@ import time
 class RewardMachine:
     def __init__(self, file):
         # <U,u0,delta_u,delta_r>
-        self.U  = []  # list of non-terminal RM states
+        self.U = []  # list of non-terminal RM states
         self.u0 = None  # initial state
-        self.delta_u    = {}  # state-transition function
-        self.delta_r    = {}  # reward-transition function
+        self.delta_u = {}  # state-transition function
+        self.delta_r = {}  # reward-transition function
         self.terminal_u = -1  # All terminal states are sent to the same terminal state with id *-1*
         self._load_reward_machine(file)
         self.known_transitions = {}  # Auxiliary variable to speed up computation of the next RM state
