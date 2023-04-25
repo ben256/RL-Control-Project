@@ -80,10 +80,10 @@ if __name__ == "__main__":
     os.mkdir(model_checkpoint_dir)
     model_plots_dir = os.path.join(training_dir, "plots")
     os.mkdir(model_plots_dir)
-    print(f"Created checkpoint and final directories")
+    print("Created checkpoint and final directories")
 
     print("Creating environment and agent")
-    rm_filename = f"{rm}.txt"
+    rm_filename = "{}.txt".format(rm)
     rm_filepath = os.path.join(project_dir, "helpers/reward_machines/txt_files", rm_filename)
     env = select_env(env_name, rm_filepath=rm_filepath)
 
@@ -174,9 +174,9 @@ if __name__ == "__main__":
             with open(os.path.join(training_dir, "score_history.csv"), "w") as f:
                 f.write("Epoch,Score,Average Score\n")
                 for i, score in enumerate(score_history):
-                    f.write(f"{i},{score},{np.mean(score_history[max(0, i - 100):i + 1])}\n")
+                    f.write("{},{},{}\n".format(i, score, np.mean(score_history[max(0, i - 100):i + 1])))
 
-        print(f"Steps: {env.env_step}\tScore: {score:.5f}\tAverage Score: {avg_score:.5f}")
+        print("Steps: {}\tScore: {:.5f}\tAverage Score: {:.5f}".format(env.env_step, score, avg_score))
 
     end_time = time.time()
-    print(f"Training took {end_time - start_time} seconds for {num_epochs} epochs")
+    print("Training took {} seconds for {} epochs".format(end_time - start_time, num_epochs))
