@@ -1,6 +1,5 @@
 import numpy as np
 from matplotlib import pyplot as plt, patches
-import seaborn as sns
 from matplotlib.collections import LineCollection
 
 state_dict = {
