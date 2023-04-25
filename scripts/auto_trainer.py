@@ -2,6 +2,7 @@ import json
 import math
 import os
 import shutil
+import time
 
 import numpy as np
 import torch
@@ -16,6 +17,7 @@ from helpers.graphs import plot_state_graph, plot_reward_graph
 
 
 if __name__ == "__main__":
+    start_time = time.time()
     project_dir = os.path.abspath(os.getcwd())
     torch.manual_seed(42)  # What is the meaning of life the universe and everything?
 
@@ -24,7 +26,7 @@ if __name__ == "__main__":
     parser.add_argument('--env_name', type=str, default='BaseEnvironment')
     parser.add_argument('--algorithm_name', type=str, default='DDPG')
     parser.add_argument('--notes', type=str, default='baseline environment with DDPG')
-    parser.add_argument('--rm_filepath', type=str, default='helpers/reward_machines/txt_files/t1.txt')
+    parser.add_argument('--rm', type=str, default='rm1')
     parser.add_argument('--save_frequency', type=int, default=100)
     parser.add_argument('--num_epochs', type=int, default=1001)
     parser.add_argument('--epoch', type=int, default=0)
@@ -42,7 +44,7 @@ if __name__ == "__main__":
     env_name = args.env_name
     algorithm_name = args.algorithm_name
     notes = args.notes
-    rm_filepath = args.rm_filepath
+    rm = args.rm
     save_frequency = args.save_frequency
     num_epochs = args.num_epochs
     epoch = args.epoch
@@ -58,7 +60,7 @@ if __name__ == "__main__":
     print("-=| Starting training |=-")
 
     # Get the device
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # assert torch.cuda.is_available(), "CUDA is not available!"
     device = torch.device("cuda")
     print("Using {} device".format(device))
 
@@ -76,6 +78,8 @@ if __name__ == "__main__":
     print(f"Created checkpoint and final directories")
 
     print("Creating environment and agent")
+    rm_filename = f"{rm}.txt"
+    rm_filepath = os.path.join(project_dir, "helpers/reward_machines/txt_files", rm_filename)
     env = select_env(env_name, rm_filepath=rm_filepath)
 
     agent = select_algo(algorithm_name, alpha=alpha, beta=beta, gamma=gamma, input_dims=env.observation_space.shape, tau=tau,
@@ -168,3 +172,6 @@ if __name__ == "__main__":
                     f.write(f"{i},{score},{np.mean(score_history[max(0, i - 100):i + 1])}\n")
 
         print(f"Steps: {env.env_step}\tScore: {score:.5f}\tAverage Score: {avg_score:.5f}")
+
+    end_time = time.time()
+    print(f"Training took {end_time - start_time} seconds for {num_epochs} epochs")

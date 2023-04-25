@@ -18,7 +18,7 @@ training_name = "RO_RM_9"
 env_name = "RewardMachineEnvironment"
 algorithm_name = "DDPG"
 notes = "DDPG, Reward Machine, changed batch size to 64, changed tau to 0.0005"
-rm_filepath = '../helpers/reward_machines/txt_files/t1.txt'
+rm_filepath = '../helpers/reward_machines/txt_files/rm1.txt'
 
 load_from_checkpoint = False  # Whether to load from a checkpoint
 save_frequency = 100  # How often to save the model

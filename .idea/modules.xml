@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/environment-model.iml" filepath="$PROJECT_DIR$/environment-model.iml" />
+      <module fileurl="file://$PROJECT_DIR$/rl-control-project.iml" filepath="$PROJECT_DIR$/rl-control-project.iml" />
     </modules>
   </component>
 </project>
