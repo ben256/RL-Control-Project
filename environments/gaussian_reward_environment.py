@@ -1,5 +1,4 @@
 """
-
 Environment Class
 """
 import math
@@ -9,7 +8,7 @@ import numpy as np
 from helpers.box import Box
 
 
-class RewardShapingEnvironment:
+class GaussianRewardEnvironment:
     def __init__(self, gravity=1.62, mass=15000.0):
         # Initialize the state, and other parameters
         self.gravity = gravity
@@ -27,8 +26,8 @@ class RewardShapingEnvironment:
             [
                 -550,  # x (lander)
                 -550,  # y (lander)
-                -35.0,  # dx/dt (lander)
-                -35.0,  # dy/dt (lander)
+                -25.0,  # dx/dt (lander)
+                -25.0,  # dy/dt (lander)
                 -2 * math.pi,  # theta (lander)
                 -1.0,  # dtheta/dt (lander)
             ]
@@ -37,8 +36,8 @@ class RewardShapingEnvironment:
             [
                 550,  # x (lander)
                 50,  # y (lander)
-                35.0,  # dx/dt (lander)
-                35.0,  # dy/dt (lander)
+                25.0,  # dx/dt (lander)
+                25.0,  # dy/dt (lander)
                 2 * math.pi,  # theta (lander)
                 1.0,  # dtheta/dt (lander)
             ]
@@ -142,45 +141,57 @@ class RewardShapingEnvironment:
         return np.array([x_new, y_new, v_x_new, v_y_new, theta_new, omega_new])
 
     def calculate_reward(self, state, extra_reward=0):
-        reward = 0
+        beta = 10  # Scaling factor
+        sigma = 0.5  # Standard deviation
+        goal_state = np.array([0, 0, 0, 0, 0, 0])  # Goal state for position, velocities, and angle
 
-        x_position_reward_weight = 2
+        x_position_reward_weight = 3
         y_position_reward_weight = 1
-        x_velocity_reward_weight = 0.5
-        y_velocity_reward_weight = 2
-        theta_reward_weight = 0.5
-        omega_reward_weight = 0.1
+        x_velocity_reward_weight = 1
+        y_velocity_reward_weight = 1
+        theta_reward_weight = 1
+        omega_reward_weight = 1
 
-        x_position_normalised = -x_position_reward_weight * abs(state[0] / self.observation_space.high[0])
-        y_position_normalised = -y_position_reward_weight * abs(state[1] / self.observation_space.low[1])
-        x_velocity_normalised = -x_velocity_reward_weight * abs(state[2] / self.observation_space.high[2])
-        y_velocity_normalised = -y_velocity_reward_weight * abs(state[3] / self.observation_space.low[3])
-        theta_normalised = -theta_reward_weight * abs(state[4] / self.observation_space.high[4])
-        omega_normalised = -omega_reward_weight * abs(state[5] / self.observation_space.low[5])
+        x_position_normalised = x_position_reward_weight * abs(state[0] / self.observation_space.high[0])
+        y_position_normalised = y_position_reward_weight * abs(state[1] / self.observation_space.low[1])
+        x_velocity_normalised = x_velocity_reward_weight * abs(state[2] / self.observation_space.high[2])
+        y_velocity_normalised = y_velocity_reward_weight * abs(state[3] / self.observation_space.low[3])
+        theta_normalised = theta_reward_weight * abs(state[4] / self.observation_space.high[4])
+        omega_normalised = omega_reward_weight * abs(state[5] / self.observation_space.low[5])
 
-        shaping_reward = x_position_normalised + y_position_normalised + x_velocity_normalised + y_velocity_normalised + theta_normalised
+        # Extract the relevant state components: x_position, y_position, x_velocity, y_velocity, and angle
+        current_state = np.array([x_position_normalised, y_position_normalised, x_velocity_normalised, y_velocity_normalised, theta_normalised, omega_normalised])
 
-        if self.prev_shaping is not None:
-            reward = shaping_reward - self.prev_shaping + extra_reward
+        # Calculate the Euclidean distance between the current state and the goal state
+        distance = np.linalg.norm(current_state[:5] - goal_state[:5])
 
-        # Update previous shaping
-        self.prev_shaping = shaping_reward
+        # if self.landing_space.is_bounded(state):
+        #     distance = np.linalg.norm(current_state - goal_state)
+        # else:
+        #     distance = np.linalg.norm(current_state[:2] - goal_state[:2])
+
+        # Compute the Gaussian-inspired reward function
+        exponent_term = np.exp(-(distance ** 2) / (2 * sigma ** 2))
+        reward = beta * exponent_term + extra_reward
 
         return reward
 
     def check_termination(self, state):
         # Check if lander outside the observation space
         if not self.observation_space.is_bounded(state):
+            # steps_reward = -3 * abs(min(0, self.env_step - 30))
+
             return True, 0  # + steps_reward
 
         # Check if lander inside the termination space
         if self.termination_space.is_bounded(state):
             self.terminated_step += 1
 
-            if self.terminated_step > 50:
+            if self.terminated_step > 10:
                 print("Landed successfully!")
                 return True, 0
             else:
+                print("In termination space!")
                 return False, 0
 
         else:

@@ -1,6 +1,7 @@
 import json
 import os
 import shutil
+import time
 
 import numpy as np
 import torch
@@ -13,10 +14,10 @@ project_dir = "C:\\dev\\University\\MECH3890\\environment-model"
 checkpoint_path = "C:\\dev\\University\\MECH3890\\environment-model\\models\\RO_RM_1\\model"  # If loading from checkpoint set this to the checkpoint path
 torch.manual_seed(42)  # What is the meaning of life the universe and everything?
 
-training_name = "RO_RM_3"
+training_name = "RO_RM_9"
 env_name = "RewardMachineEnvironment"
 algorithm_name = "DDPG"
-notes = "DDPG, Reward Machine, drastically decreased x starting point limits"
+notes = "DDPG, Reward Machine, changed batch size to 64, changed tau to 0.0005"
 
 load_from_checkpoint = False  # Whether to load from a checkpoint
 save_frequency = 100  # How often to save the model
@@ -26,8 +27,8 @@ alpha = 0.0001  # Actor learning rate
 beta = 0.001  # Critic learning rate
 gamma = 0.9  # Discount factor (closer to 1 = more future reward)
 sigma = 0.25  # Noise factor
-tau = 0.001  # Soft update factor
-batch_size = 200  # Batch size
+tau = 0.0005  # Soft update factor
+batch_size = 64  # Batch size
 layer1_size = 400  # Size of first hidden layer
 layer2_size = 300  # Size of second hidden layer
 
@@ -89,7 +90,8 @@ if __name__ == "__main__":
     for epoch in range(epoch, num_epochs):
         print('-' * 10)
         print('Epoch {}/{}'.format(epoch, num_epochs - 1))
-        state = env.reset()
+        state_dict = env.reset()
+        state = state_dict['features']
         terminated = False
         truncated = False
         record = False
@@ -103,10 +105,28 @@ if __name__ == "__main__":
         while not (terminated or truncated):
             if record:
                 epoch_history.append(state)
-
+            # time the choose action function
             action = agent.choose_action(state)
-            new_state, reward, terminated, truncated, info = env.step(action)
-            agent.remember(state, action, reward, new_state, terminated)
+            new_state_dict, reward, terminated, truncated, info = env.step(action)
+            new_state = new_state_dict['features']
+
+            if env.add_crm:
+                experiences = info["crm-experience"]
+            else:
+                if env.add_rs:
+                    reward = info["rs-reward"]
+                experiences = [(state, action, reward, new_state, terminated)]
+
+            for _state, _action, _reward, _new_state, _done in experiences:
+                _state = _state['features']
+                _state.shape = state.shape
+                _action.shape = action.shape
+                _new_state = _new_state['features']
+                _new_state.shape = new_state.shape
+                _reward = np.array([_reward])
+                _done = np.array([_done])
+                agent.remember(_state, _action, _reward, _new_state, _done)
+
             agent.learn()
             state = new_state
             score += reward

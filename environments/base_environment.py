@@ -144,7 +144,6 @@ class BaseEnvironment:
         # Check if lander outside the observation space
         if not self.observation_space.is_bounded(state):
             # steps_reward = -3 * abs(min(0, self.env_step - 30))
-
             return True, -100  # + steps_reward
 
         # Check if lander inside the termination space
@@ -152,6 +151,7 @@ class BaseEnvironment:
             self.terminated_step += 1
 
             if self.terminated_step > 50:
+                print("Landed successfully")
                 return True, 200
             else:
                 return False, 100
@@ -169,7 +169,7 @@ class BaseEnvironment:
         initial_x = np.random.choice([-300, -200, -100, 100, 200, 300])
         # initial_x = 200
         # initial_y = -500.0
-        initial_y = -545.0
+        initial_y = -500.0
         return np.array([initial_x, initial_y, 0.0, 0.0, 0.0, 0.0])
 
     def render(self):

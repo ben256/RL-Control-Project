@@ -13,11 +13,11 @@ project_dir = "C:\\dev\\University\\MECH3890\\environment-model"
 torch.manual_seed(42)  # What is the meaning of life the universe and everything?
 
 run_name = "test"
-env_name = "BaseEnvironment"
+env_name = "GaussianRewardEnvironment"
 algorithm_name = "DDPG"
-notes = "thrust sensitivity test"
+notes = "Gaussian Reward Environment with DDPG"
 run_type = "test"
-external_model = "test_model"
+external_model = "RO_gaussian_3"
 
 overwrite = True
 load_from_checkpoint = True

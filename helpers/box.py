@@ -19,7 +19,8 @@ class Box:
         return self._shape
 
     def is_bounded(self, x):
-        return np.all(x >= self.low) and np.all(x <= self.high)
+        mask = ~np.isnan(self.low)
+        return np.all(x[mask] >= self.low[mask]) and np.all(x[mask] <= self.high[mask])
 
     def bounds(self):
         return self.low, self.high
