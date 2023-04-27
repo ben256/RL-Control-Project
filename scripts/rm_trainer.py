@@ -14,11 +14,11 @@ project_dir = "C:\\dev\\University\\MECH3890\\environment-model"
 checkpoint_path = "C:\\dev\\University\\MECH3890\\environment-model\\models\\RO_RM_1\\model"  # If loading from checkpoint set this to the checkpoint path
 torch.manual_seed(42)  # What is the meaning of life the universe and everything?
 
-training_name = "RO_RM_9"
+training_name = "RO_RM_14"
 env_name = "RewardMachineEnvironment"
-algorithm_name = "DDPG"
-notes = "DDPG, Reward Machine, changed batch size to 64, changed tau to 0.0005"
-rm_filepath = '../helpers/reward_machines/txt_files/rm1.txt'
+algorithm_name = "JIT_DDPG"
+notes = "basically the same as RO_RM_12"
+rm = 'rm2'
 
 load_from_checkpoint = False  # Whether to load from a checkpoint
 save_frequency = 100  # How often to save the model
@@ -27,8 +27,8 @@ epoch = 0  # Current epoch
 alpha = 0.0001  # Actor learning rate
 beta = 0.001  # Critic learning rate
 gamma = 0.9  # Discount factor (closer to 1 = more future reward)
-sigma = 0.25  # Noise factor
-tau = 0.0005  # Soft update factor
+sigma = 0.2  # Noise factor
+tau = 0.001  # Soft update factor
 batch_size = 64  # Batch size
 layer1_size = 400  # Size of first hidden layer
 layer2_size = 300  # Size of second hidden layer
@@ -37,6 +37,7 @@ if __name__ == "__main__":
     print("-=| Starting training |=-")
 
     # Get the device
+    assert torch.cuda.is_available(), "CUDA is not available"
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Using {} device".format(device))
 
@@ -61,6 +62,8 @@ if __name__ == "__main__":
     print(f"Created checkpoint and final directories")
 
     print("Creating environment and agent")
+    rm_filename = "{}.txt".format(rm)
+    rm_filepath = os.path.join(project_dir, "helpers/reward_machines/txt_files", rm_filename)
     env = select_env(env_name, rm_filepath=rm_filepath)
 
     agent = select_algo(algorithm_name, alpha=alpha, beta=beta, gamma=gamma, input_dims=env.observation_space.shape, tau=tau,
@@ -81,6 +84,7 @@ if __name__ == "__main__":
         "agent_params": agent_params,
         "notes": notes,
     }
+
     with open(os.path.join(training_dir, "parameters.json"), "w") as f:
         json.dump(model_params, f)
 
@@ -133,6 +137,9 @@ if __name__ == "__main__":
             score += reward
 
         score_history.append(score)
+        if info:
+            if "rm_state_id" in info:
+                state_history.append(info["rm_state_id"])
         avg_score = np.mean(score_history[-100:])
 
         if epoch > 30:
@@ -150,8 +157,8 @@ if __name__ == "__main__":
 
             # Save score history to csv
             with open(os.path.join(training_dir, "score_history.csv"), "w") as f:
-                f.write("Epoch,Score,Average Score\n")
+                f.write("Epoch,Score,Average Score,Steps,RM State\n")
                 for i, score in enumerate(score_history):
-                    f.write(f"{i},{score},{np.mean(score_history[max(0, i - 100):i + 1])}\n")
+                    f.write(f"{i},{score},{np.mean(score_history[max(0, i - 100):i + 1])},{env.env_step},{state_history[i]}\n")
 
         print(f"Steps: {env.env_step}\tScore: {score:.5f}\tAverage Score: {avg_score:.5f}")

@@ -1,5 +1,4 @@
 import json
-import math
 import os
 import shutil
 import time
@@ -155,6 +154,9 @@ if __name__ == "__main__":
             score += reward
 
         score_history.append(score)
+        if info:
+            if "rm_state_id" in info:
+                state_history.append(info["rm_state_id"])
         avg_score = np.mean(score_history[-100:])
 
         if epoch > 30:
@@ -172,9 +174,10 @@ if __name__ == "__main__":
 
             # Save score history to csv
             with open(os.path.join(training_dir, "score_history.csv"), "w") as f:
-                f.write("Epoch,Score,Average Score\n")
+                f.write("Epoch,Score,Average Score,Steps,RM State\n")
                 for i, score in enumerate(score_history):
-                    f.write("{},{},{}\n".format(i, score, np.mean(score_history[max(0, i - 100):i + 1])))
+                    f.write(f"{i},{score},{np.mean(score_history[max(0, i - 100):i + 1])},{env.env_step},{state_history[i]}\n")
+
 
         print("Steps: {}\tScore: {:.5f}\tAverage Score: {:.5f}".format(env.env_step, score, avg_score))
 

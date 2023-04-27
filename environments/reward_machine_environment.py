@@ -151,7 +151,7 @@ class BaseRewardMachineEnvironment:
     def check_termination(self, state):
         # Check if lander outside the observation space
         if not self.observation_space.is_bounded(state):
-            return True, 0  # + steps_reward
+            return True, 0
         else:
             return False, 0
 
@@ -260,6 +260,7 @@ class RewardMachineEnvironmentWrapper:
         # Returning the result of this action
         done = rm_done or terminated or truncated
         if done:
+            info['rm_state_id'] = self.current_state_id
             info['done_reason'] = ['rm_done', 'env_done', 'truncated'][[rm_done, terminated, truncated].index(True)]
         rm_state = self.get_observation(new_state, self.current_state_id, done)
 
