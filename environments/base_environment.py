@@ -111,6 +111,8 @@ class BaseEnvironment:
 
         x, y, v_x, v_y, theta, omega = state
 
+        thruster_theta += theta
+
         v_x_new = v_x + ((thruster_power * math.sin(thruster_theta)) / self.mass) * dt
         v_y_new = v_y + ((-thruster_power * math.cos(thruster_theta)) / self.mass + self.gravity) * dt
 

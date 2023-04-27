@@ -132,6 +132,8 @@ class BaseRewardMachineEnvironment:
 
         x, y, v_x, v_y, theta, omega = state
 
+        thruster_theta += theta
+
         v_x_new = v_x + ((thruster_power * math.sin(thruster_theta)) / self.mass) * dt
         v_y_new = v_y + ((-thruster_power * math.cos(thruster_theta)) / self.mass + self.gravity) * dt
 
@@ -153,20 +155,6 @@ class BaseRewardMachineEnvironment:
         else:
             return False, 0
 
-        # # Check if lander inside the termination space
-        # if self.termination_space.is_bounded(state):
-        #     self.terminated_step += 1
-        #
-        #     if self.terminated_step > 50:
-        #         print("Landed successfully!")
-        #         return True, 0
-        #     else:
-        #         return False, 0
-        #
-        # else:
-        #     self.terminated_step = 0
-        #     return False, 0
-
     def check_truncation(self):
         # Check if the episode ended due to truncation
         if self.env_step >= 400:
@@ -182,12 +170,18 @@ class BaseRewardMachineEnvironment:
         events = ''
 
         # Check if lander is within a 100x100 box around (x=0, y=500)
-        if -25 <= x_position <= 25 and -475 >= y_position >= -525 and -0.2 <= angle <= 0.2:
+        if -25 <= x_position <= 25 and -475 >= y_position >= -525:
             events += 'b'
 
         # Check if lander is within a 100x100 box around (x=0, y=0)
-        if -25 <= x_position <= 25 and -25 <= y_position <= 25 and -0.2 <= angle <= 0.2 and -1 <= y_velocity <= 1:
+        if -25 <= x_position <= 25 and -25 <= y_position <= 25:
             events += 'c'
+
+        if -0.2 <= angle <= 0.2 and -1 <= angular_velocity <= 1:
+            events += 'd'
+
+        if -1 <= x_velocity <= 1 and -1 <= y_velocity <= 1:
+            events += 'e'
 
         return events
 
@@ -312,97 +306,6 @@ class RewardMachineEnvironmentWrapper:
 
     def __getattr__(self, name):
         return getattr(self.env, name)
-
-
-# class RewardMachineEnvironmentWrapper:
-#     def __init__(self, base_env, rm_filepath, add_crm, add_rs, gamma, rs_gamma):
-#         self.env = base_env
-#         self.rm = RewardMachine(rm_filepath)
-#         self.rm_state = self.rm.u0
-#         self.add_crm = add_crm
-#         self.add_rs = add_rs
-#         if add_rs:
-#             self.rm.add_reward_shaping(gamma, rs_gamma)
-#
-#     def reset(self):
-#         self.valid_states = None
-#         return self.env.reset()
-#
-#
-#     def step(self, action):
-#         new_state, original_reward, terminated, truncated, info = self.env.step(action)
-#         self.state = new_state
-#         events = self.get_events()
-#         next_rm_state, rm_reward, rm_done = self.rm.step(self.rm_state, events, info, add_rs=self.add_rs, env_done=terminated)
-#         self.rm_state = next_rm_state
-#
-#         if self.add_crm:
-#             crm_experience = self._get_crm_experience(action, terminated, events, info)
-#             info["crm-experience"] = crm_experience
-#         elif self.add_rs:
-#             info["rs-reward"] = rm_reward
-#
-#         total_reward = original_reward + rm_reward
-#         return new_state, total_reward, terminated, truncated, info
-
-    # def step(self, action):
-    #     u_id = self.rm.get_current_state()
-    #     next_obs, original_reward, env_done, info = self.env.step(action)
-    #     events = self.get_events()
-    #     next_u_id, rm_rew, rm_done = self.rm.step(u_id, events, info, self.add_rs, env_done)
-    #     self.rm.set_current_state(next_u_id)
-    #
-    #     if self.add_crm:
-    #         crm_experience = self._get_crm_experience(obs, action, next_obs, env_done, events, info)
-    #         info["crm-experience"] = crm_experience
-    #     elif self.add_rs:
-    #         _, rs_rm_rew, _ = self.rm.step(u_id, events, info, self.add_rs, env_done)
-    #         info["rs-reward"] = rs_rm_rew
-    #
-    #     done = rm_done or env_done
-    #     return next_obs, rm_rew, done, info
-    #
-    # def _get_crm_experience(self, obs, action, next_obs, env_done, events, info):
-    #     exp, next_u = self._get_rm_experience(self.rm, u_id, obs, action, next_obs, env_done, events, info)
-    #     return exp
-    #
-    # def _get_rm_experience(self, rm, u_id, obs, action, next_obs, env_done, events, info):
-    #     rm_obs = self.get_observation(obs, u_id, False)
-    #     next_u_id, rm_rew, rm_done = rm.step(u_id, events, info, self.add_rs, env_done)
-    #     done = rm_done or env_done
-    #     rm_next_obs = self.get_observation(next_obs, next_u_id, done)
-    #     return (rm_obs, action, rm_rew, rm_next_obs, done), next_u_id
-    #
-    # def get_observation(self, obs, u_id, done):
-    #     # Adjust this method according to your specific environment and reward machine requirements
-    #     rm_obs = np.concatenate((obs, [u_id]))
-    #
-    #     if done:
-    #         # If the episode is done, you can return a specific terminal observation or perform any
-    #         # necessary processing here.
-    #         pass
-    #
-    #     return rm_obs
-    #
-    # # Include the `get_events()` method here, as provided in a previous response
-    # def get_events(self):
-    #     x_position = self.env.state[0]
-    #     y_position = self.env.state[1]
-    #     x_velocity = self.env.state[2]
-    #     y_velocity = self.env.state[3]
-    #     angle = self.env.state[4]
-    #     angular_velocity = self.env.state[5]
-    #     events = ''
-    #
-    #     # Check if lander is within a 100x100 box around (x=0, y=500)
-    #     if -50 <= x_position <= 50 and 450 <= y_position <= 550 and -0.2 <= angle <= 0.2:
-    #         events += 'b'
-    #
-    #     # Check if lander is within a 100x100 box around (x=0, y=0)
-    #     if -50 <= x_position <= 50 and -50 <= y_position <= 50 and -0.2 <= angle <= 0.2 and -1 <= y_velocity <= 1:
-    #         events += 'c'
-    #
-    #     return events
 
 
 class RewardMachineEnvironment(RewardMachineEnvironmentWrapper):
