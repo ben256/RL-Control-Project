@@ -14,11 +14,11 @@ project_dir = "C:\\dev\\University\\MECH3890\\environment-model"
 checkpoint_path = "C:\\dev\\University\\MECH3890\\environment-model\\models\\RO_RM_1\\model"  # If loading from checkpoint set this to the checkpoint path
 torch.manual_seed(42)  # What is the meaning of life the universe and everything?
 
-training_name = "RO_RM_14"
+training_name = "test_RO_RM_14"
 env_name = "RewardMachineEnvironment"
-algorithm_name = "JIT_DDPG"
+algorithm_name = "DDPG"
 notes = "basically the same as RO_RM_12"
-rm = 'rm2'
+rm = 'rm4'
 
 load_from_checkpoint = False  # Whether to load from a checkpoint
 save_frequency = 100  # How often to save the model

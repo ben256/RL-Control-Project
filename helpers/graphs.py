@@ -1,6 +1,8 @@
 import numpy as np
+import matplotlib
 from matplotlib import pyplot as plt, patches
 from matplotlib.collections import LineCollection
+matplotlib.use('Agg')
 
 state_dict = {
     0: "X Position",
