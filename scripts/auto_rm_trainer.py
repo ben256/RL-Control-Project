@@ -25,6 +25,7 @@ if __name__ == "__main__":
     parser.add_argument('--algorithm_name', type=str, default='DDPG')
     parser.add_argument('--notes', type=str, default='baseline environment with DDPG')
     parser.add_argument('--rm', type=str, default='rm1')
+    parser.add_argument('--use_temp_dir', type=bool, default=False)
     parser.add_argument('--save_frequency', type=int, default=100)
     parser.add_argument('--num_epochs', type=int, default=1001)
     parser.add_argument('--epoch', type=int, default=0)
@@ -43,6 +44,7 @@ if __name__ == "__main__":
     algorithm_name = args.algorithm_name
     notes = args.notes
     rm = args.rm
+    use_temp_dir = args.use_temp_dir
     save_frequency = args.save_frequency
     num_epochs = args.num_epochs
     epoch = args.epoch
@@ -64,7 +66,10 @@ if __name__ == "__main__":
 
     # Create the model directory if it doesn't exist
     print("Creating training folder")
-    project_dir = os.path.abspath(os.getcwd())
+    if use_temp_dir:
+        project_dir = '$TMPDIR'
+    else:
+        project_dir = os.path.abspath(os.getcwd())
     training_dir = os.path.join(project_dir, "models", training_name)
     if os.path.exists(training_dir):
         shutil.rmtree(training_dir)
@@ -77,7 +82,9 @@ if __name__ == "__main__":
     print("Created checkpoint and final directories")
 
     print("Creating environment and agent")
-    env = select_env(env_name)
+    rm_filename = "{}.txt".format(rm)
+    rm_filepath = os.path.join(project_dir, "helpers/reward_machines/txt_files", rm_filename)
+    env = select_env(env_name, rm_filepath=rm_filepath)
 
     agent = select_algo(algorithm_name, alpha=alpha, beta=beta, gamma=gamma, input_dims=env.observation_space.shape, tau=tau,
                         sigma=sigma, env=env, batch_size=batch_size, layer1_size=layer1_size, layer2_size=layer2_size,
@@ -105,7 +112,8 @@ if __name__ == "__main__":
     for epoch in range(epoch, num_epochs):
         print('-' * 10)
         print('Epoch {}/{}'.format(epoch, num_epochs - 1))
-        state = env.reset()
+        state_dict = env.reset()
+        state = state_dict['features']
         terminated = False
         truncated = False
         record = False
@@ -119,15 +127,36 @@ if __name__ == "__main__":
         while not (terminated or truncated):
             if record:
                 epoch_history.append(state)
-
+            # time the choose action function
             action = agent.choose_action(state)
-            new_state, reward, terminated, truncated, info = env.step(action)
-            agent.remember(state, action, reward, new_state, terminated)
+            new_state_dict, reward, terminated, truncated, info = env.step(action)
+            new_state = new_state_dict['features']
+
+            if env.add_crm:
+                experiences = info["crm-experience"]
+            else:
+                if env.add_rs:
+                    reward = info["rs-reward"]
+                experiences = [(state, action, reward, new_state, terminated)]
+
+            for _state, _action, _reward, _new_state, _done in experiences:
+                _state = _state['features']
+                _state.shape = state.shape
+                _action.shape = action.shape
+                _new_state = _new_state['features']
+                _new_state.shape = new_state.shape
+                _reward = np.array([_reward])
+                _done = np.array([_done])
+                agent.remember(_state, _action, _reward, _new_state, _done)
+
             agent.learn()
             state = new_state
             score += reward
 
         score_history.append(score)
+        if info:
+            if "rm_state_id" in info:
+                state_history.append(info["rm_state_id"])
         avg_score = np.mean(score_history[-100:])
 
         if epoch > 30:
@@ -145,8 +174,12 @@ if __name__ == "__main__":
 
             # Save score history to csv
             with open(os.path.join(training_dir, "score_history.csv"), "w") as f:
-                f.write("Epoch,Score,Average Score\n")
+                f.write("Epoch,Score,Average Score,Steps,RM State\n")
                 for i, score in enumerate(score_history):
-                    f.write(f"{i},{score},{np.mean(score_history[max(0, i - 100):i + 1])}\n")
+                    f.write(f"{i},{score},{np.mean(score_history[max(0, i - 100):i + 1])},{env.env_step},{state_history[i]}\n")
 
-        print(f"Steps: {env.env_step}\tScore: {score:.5f}\tAverage Score: {avg_score:.5f}")
+
+        print("Steps: {}\tScore: {:.5f}\tAverage Score: {:.5f}".format(env.env_step, score, avg_score))
+
+    end_time = time.time()
+    print("Training took {} seconds for {} epochs".format(end_time - start_time, num_epochs))

@@ -13,19 +13,19 @@ project_dir = "C:\\dev\\University\\MECH3890\\environment-model"
 checkpoint_path = "C:\\dev\\University\\MECH3890\\environment-model\\models\\RO_RM_1\\model"  # If loading from checkpoint set this to the checkpoint path
 torch.manual_seed(42)  # What is the meaning of life the universe and everything?
 
-training_name = "RO_RM_3"
-env_name = "RewardMachineEnvironment"
+training_name = "final_baseline"
+env_name = "BaseEnvironment"
 algorithm_name = "DDPG"
-notes = "DDPG, Reward Machine, drastically decreased x starting point limits"
+notes = "DDPG, Base env, initial x=0"
 
 load_from_checkpoint = False  # Whether to load from a checkpoint
 save_frequency = 100  # How often to save the model
-num_epochs = 50001  # Number of epochs to train for
+num_epochs = 10001  # Number of epochs to train for
 epoch = 0  # Current epoch
 alpha = 0.0001  # Actor learning rate
 beta = 0.001  # Critic learning rate
 gamma = 0.9  # Discount factor (closer to 1 = more future reward)
-sigma = 0.25  # Noise factor
+sigma = 0.2  # Noise factor
 tau = 0.001  # Soft update factor
 batch_size = 200  # Batch size
 layer1_size = 400  # Size of first hidden layer
@@ -35,8 +35,8 @@ if __name__ == "__main__":
     print("-=| Starting training |=-")
 
     # Get the device
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device = "cpu"
+    assert torch.cuda.is_available(), "CUDA is not available"
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Using {} device".format(device))
 
     # Create the model directory if it doesn't exist
@@ -80,6 +80,7 @@ if __name__ == "__main__":
         "agent_params": agent_params,
         "notes": notes,
     }
+
     with open(os.path.join(training_dir, "parameters.json"), "w") as f:
         json.dump(model_params, f)
 

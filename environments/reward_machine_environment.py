@@ -183,6 +183,9 @@ class BaseRewardMachineEnvironment:
         if -1 <= x_velocity <= 1 and -1 <= y_velocity <= 1:
             events += 'e'
 
+        if -25 <= x_position <= 25:
+            events += 'f'
+
         return events
 
     def initial_state(self):

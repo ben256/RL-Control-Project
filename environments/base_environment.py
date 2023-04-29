@@ -18,17 +18,17 @@ class BaseEnvironment:
         self.max_thrust = 30000.0  # N
         self.min_thrust = 0  # N
 
-        self.max_thruster_angle = 1  # rad
-        self.min_thruster_angle = -1  # rad
+        self.max_thruster_angle = 0.5  # rad
+        self.min_thruster_angle = -0.5  # rad
 
         # Observation space
         low = np.array(
             [
                 -550,  # x (lander)
                 -550,  # y (lander)
-                -25.0,  # dx/dt (lander)
-                -25.0,  # dy/dt (lander)
-                -math.pi * 3/4,  # theta (lander)
+                -35.0,  # dx/dt (lander)
+                -35.0,  # dy/dt (lander)
+                -2 * math.pi,  # theta (lander)
                 -1.0,  # dtheta/dt (lander)
             ]
         ).astype(np.float32)
@@ -36,9 +36,9 @@ class BaseEnvironment:
             [
                 550,  # x (lander)
                 50,  # y (lander)
-                25.0,  # dx/dt (lander)
-                25.0,  # dy/dt (lander)
-                math.pi * 3/4,  # theta (lander)
+                35.0,  # dx/dt (lander)
+                35.0,  # dy/dt (lander)
+                2 * math.pi,  # theta (lander)
                 1.0,  # dtheta/dt (lander)
             ]
         ).astype(np.float32)
@@ -127,11 +127,11 @@ class BaseEnvironment:
     def calculate_reward(self, state, extra_reward=0):
         reward = 0
 
-        x_position_reward_weight = 100
-        y_position_reward_weight = 100
-        x_velocity_reward_weight = 75
-        y_velocity_reward_weight = 75
-        angle_reward_weight = 80
+        x_position_reward_weight = 10
+        y_position_reward_weight = 10
+        x_velocity_reward_weight = 10
+        y_velocity_reward_weight = 10
+        angle_reward_weight = 10
 
         # Compute reward based on current state
         x_position_reward = -x_position_reward_weight * abs(state[0] / self.observation_space.high[0])
@@ -145,18 +145,18 @@ class BaseEnvironment:
     def check_termination(self, state):
         # Check if lander outside the observation space
         if not self.observation_space.is_bounded(state):
-            # steps_reward = -3 * abs(min(0, self.env_step - 30))
-            return True, -100  # + steps_reward
+            return True, 0
 
         # Check if lander inside the termination space
         if self.termination_space.is_bounded(state):
             self.terminated_step += 1
 
-            if self.terminated_step > 50:
-                print("Landed successfully")
-                return True, 200
+            if self.terminated_step > 10:
+                print("Landed successfully!")
+                return True, 0
             else:
-                return False, 100
+                print("In termination space!")
+                return False, 0
 
         else:
             self.terminated_step = 0
@@ -168,15 +168,11 @@ class BaseEnvironment:
             return True
 
     def initial_state(self):
-        initial_x = np.random.choice([-300, -200, -100, 100, 200, 300])
-        # initial_x = 200
+        # initial_x = np.random.choice([-300, -200, -100, 100, 200, 300])
+        initial_x = 0
         # initial_y = -500.0
         initial_y = -500.0
         return np.array([initial_x, initial_y, 0.0, 0.0, 0.0, 0.0])
-
-    def render(self):
-        # Render the environment (optional)
-        pass
 
     def get_params(self):
         # Export the parameters of the environment (optional)

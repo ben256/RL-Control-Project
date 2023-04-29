@@ -14,11 +14,11 @@ project_dir = "C:\\dev\\University\\MECH3890\\environment-model"
 checkpoint_path = "C:\\dev\\University\\MECH3890\\environment-model\\models\\RO_RM_1\\model"  # If loading from checkpoint set this to the checkpoint path
 torch.manual_seed(42)  # What is the meaning of life the universe and everything?
 
-training_name = "test_RO_RM_14"
+training_name = "test_RO_RM_16"
 env_name = "RewardMachineEnvironment"
-algorithm_name = "DDPG"
+algorithm_name = "JIT_DDPG"
 notes = "basically the same as RO_RM_12"
-rm = 'rm4'
+rm = 'rm6'
 
 load_from_checkpoint = False  # Whether to load from a checkpoint
 save_frequency = 100  # How often to save the model
@@ -29,7 +29,7 @@ beta = 0.001  # Critic learning rate
 gamma = 0.9  # Discount factor (closer to 1 = more future reward)
 sigma = 0.2  # Noise factor
 tau = 0.001  # Soft update factor
-batch_size = 64  # Batch size
+batch_size = 200  # Batch size
 layer1_size = 400  # Size of first hidden layer
 layer2_size = 300  # Size of second hidden layer
 
