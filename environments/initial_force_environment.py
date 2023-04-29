@@ -1,5 +1,4 @@
 """
-
 Environment Class
 """
 import math
@@ -9,7 +8,7 @@ import numpy as np
 from helpers.box import Box
 
 
-class RewardShapingEnvironment:
+class InitialForceEnvironment:
     def __init__(self, gravity=1.62, mass=15000.0):
         # Initialize the state, and other parameters
         self.gravity = gravity
@@ -21,6 +20,8 @@ class RewardShapingEnvironment:
 
         self.max_thruster_angle = 0.5  # rad
         self.min_thruster_angle = -0.5  # rad
+
+        self.initial_force = 100000  # N
 
         # Observation space
         low = np.array(
@@ -68,24 +69,6 @@ class RewardShapingEnvironment:
         ).astype(np.float32)
         self.termination_space = Box(low, high)
 
-        high = np.array([
-            50,  # x (lander)
-            50,  # y (lander)
-            None,  # dx/dt (lander)
-            None,  # dy/dt (lander)
-            None,  # theta (lander)
-            None,  # dtheta/dt (lander)
-        ]).astype(np.float32)
-        low = np.array([
-            -50,  # x (lander)
-            -100,  # y (lander)
-            None,  # dx/dt (lander)
-            None,  # dy/dt (lander)
-            None,  # theta (lander)
-            None,  # dtheta/dt (lander)
-        ]).astype(np.float32)
-        self.landing_space = Box(low, high)
-
         # Action is two floats [thruster angle, thruster power]
         # Thruster angle: -1..+1 angle from min_thruster_angle to max_thruster_angle
         # Thruster Power: -1..0 off, 0..+1 throttle from 50% to 100% power. Engine can't work with less than 50% power
@@ -130,6 +113,8 @@ class RewardShapingEnvironment:
 
         x, y, v_x, v_y, theta, omega = state
 
+        thruster_theta += theta
+
         v_x_new = v_x + ((thruster_power * math.sin(thruster_theta)) / self.mass) * dt
         v_y_new = v_y + ((-thruster_power * math.cos(thruster_theta)) / self.mass + self.gravity) * dt
 
@@ -144,43 +129,35 @@ class RewardShapingEnvironment:
     def calculate_reward(self, state, extra_reward=0):
         reward = 0
 
-        x_position_reward_weight = 1
-        y_position_reward_weight = 1
-        x_velocity_reward_weight = 1
-        y_velocity_reward_weight = 1
-        theta_reward_weight = 1
-        omega_reward_weight = 1
+        x_position_reward_weight = 10
+        y_position_reward_weight = 10
+        x_velocity_reward_weight = 10
+        y_velocity_reward_weight = 10
+        angle_reward_weight = 10
 
-        x_position_normalised = -x_position_reward_weight * abs(state[0] / self.observation_space.high[0])
-        y_position_normalised = -y_position_reward_weight * abs(state[1] / self.observation_space.low[1])
-        x_velocity_normalised = -x_velocity_reward_weight * abs(state[2] / self.observation_space.high[2])
-        y_velocity_normalised = -y_velocity_reward_weight * abs(state[3] / self.observation_space.low[3])
-        theta_normalised = -theta_reward_weight * abs(state[4] / self.observation_space.high[4])
-        omega_normalised = -omega_reward_weight * abs(state[5] / self.observation_space.low[5])
+        # Compute reward based on current state
+        x_position_reward = -x_position_reward_weight * abs(state[0] / self.observation_space.high[0])
+        y_position_reward = -y_position_reward_weight * abs(state[1] / self.observation_space.low[1])
+        x_velocity_reward = -x_velocity_reward_weight * abs(state[2] / self.observation_space.high[2])
+        y_velocity_reward = -y_velocity_reward_weight * abs(state[3] / self.observation_space.low[3])
+        angle_reward = -angle_reward_weight * abs(state[4] / self.observation_space.high[4])
 
-        shaping_reward = x_position_normalised + y_position_normalised + x_velocity_normalised + y_velocity_normalised + theta_normalised
-
-        if self.prev_shaping is not None:
-            reward = shaping_reward - self.prev_shaping + extra_reward
-
-        # Update previous shaping
-        self.prev_shaping = shaping_reward
-
-        return reward
+        return x_position_reward + y_position_reward + x_velocity_reward + y_velocity_reward + angle_reward
 
     def check_termination(self, state):
         # Check if lander outside the observation space
         if not self.observation_space.is_bounded(state):
-            return True, 0  # + steps_reward
+            return True, 0
 
         # Check if lander inside the termination space
         if self.termination_space.is_bounded(state):
             self.terminated_step += 1
 
-            if self.terminated_step > 50:
+            if self.terminated_step > 10:
                 print("Landed successfully!")
                 return True, 0
             else:
+                print("In termination space!")
                 return False, 0
 
         else:
@@ -189,19 +166,18 @@ class RewardShapingEnvironment:
 
     def check_truncation(self):
         # Check if the episode ended due to truncation
-        if self.env_step >= 400:
+        if self.env_step >= 500:
             return True
 
     def initial_state(self):
-        initial_x = np.random.choice([-400, -300, -200, 200, 300, 400])
-        # initial_x = 200
-        # initial_y = -500.0
-        initial_y = -500.0
-        return np.array([initial_x, initial_y, 0.0, 0.0, 0.0, 0.0])
+        force_angle = np.random.uniform(-math.pi / 2, math.pi / 2)
+        force_magnitude = np.random.uniform(0, self.initial_force)
+        initial_x_velocity = force_magnitude * math.cos(force_angle) / self.mass
+        initial_y_velocity = force_magnitude * math.sin(force_angle) / self.mass
 
-    def render(self):
-        # Render the environment (optional)
-        pass
+        initial_x_position = 0
+        initial_y_position = -500.0
+        return np.array([initial_x_position, initial_y_position, initial_x_velocity, initial_y_velocity, 0.0, 0.0])
 
     def get_params(self):
         # Export the parameters of the environment (optional)

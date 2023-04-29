@@ -13,10 +13,10 @@ project_dir = "C:\\dev\\University\\MECH3890\\environment-model"
 checkpoint_path = "C:\\dev\\University\\MECH3890\\environment-model\\models\\RO_RM_1\\model"  # If loading from checkpoint set this to the checkpoint path
 torch.manual_seed(42)  # What is the meaning of life the universe and everything?
 
-training_name = "final_baseline"
-env_name = "BaseEnvironment"
+training_name = "initial_force"
+env_name = "InitialForceEnvironment"
 algorithm_name = "DDPG"
-notes = "DDPG, Base env, initial x=0"
+notes = "DDPG, Initial force env, initial x=0"
 
 load_from_checkpoint = False  # Whether to load from a checkpoint
 save_frequency = 100  # How often to save the model

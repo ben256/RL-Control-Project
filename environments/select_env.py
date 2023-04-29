@@ -1,5 +1,6 @@
 from environments.base_environment import BaseEnvironment
 from environments.gaussian_reward_environment import GaussianRewardEnvironment
+from environments.initial_force_environment import InitialForceEnvironment
 from environments.reward_machine_environment import RewardMachineEnvironment
 from environments.reward_shaping_environment import RewardShapingEnvironment
 
@@ -13,5 +14,7 @@ def select_env(env_name, **kwargs):
         return GaussianRewardEnvironment(**kwargs)
     if env_name == "RewardMachineEnvironment":
         return RewardMachineEnvironment(**kwargs)
+    if env_name == "InitialForceEnvironment":
+        return InitialForceEnvironment(**kwargs)
     else:
         raise ValueError("Unknown environment name")
