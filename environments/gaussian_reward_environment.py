@@ -9,7 +9,7 @@ from helpers.box import Box
 
 
 class GaussianRewardEnvironment:
-    def __init__(self, gravity=1.62, mass=15000.0):
+    def __init__(self, gravity=1.62, mass=15000.0, initial_force=0.0):
         # Initialize the state, and other parameters
         self.gravity = gravity
         self.mass = mass  # kg
@@ -26,8 +26,8 @@ class GaussianRewardEnvironment:
             [
                 -550,  # x (lander)
                 -550,  # y (lander)
-                -25.0,  # dx/dt (lander)
-                -25.0,  # dy/dt (lander)
+                -35.0,  # dx/dt (lander)
+                -35.0,  # dy/dt (lander)
                 -2 * math.pi,  # theta (lander)
                 -1.0,  # dtheta/dt (lander)
             ]
@@ -36,8 +36,8 @@ class GaussianRewardEnvironment:
             [
                 550,  # x (lander)
                 50,  # y (lander)
-                25.0,  # dx/dt (lander)
-                25.0,  # dy/dt (lander)
+                35.0,  # dx/dt (lander)
+                35.0,  # dy/dt (lander)
                 2 * math.pi,  # theta (lander)
                 1.0,  # dtheta/dt (lander)
             ]
@@ -67,24 +67,6 @@ class GaussianRewardEnvironment:
         ).astype(np.float32)
         self.termination_space = Box(low, high)
 
-        high = np.array([
-            50,  # x (lander)
-            50,  # y (lander)
-            None,  # dx/dt (lander)
-            None,  # dy/dt (lander)
-            None,  # theta (lander)
-            None,  # dtheta/dt (lander)
-        ]).astype(np.float32)
-        low = np.array([
-            -50,  # x (lander)
-            -100,  # y (lander)
-            None,  # dx/dt (lander)
-            None,  # dy/dt (lander)
-            None,  # theta (lander)
-            None,  # dtheta/dt (lander)
-        ]).astype(np.float32)
-        self.landing_space = Box(low, high)
-
         # Action is two floats [thruster angle, thruster power]
         # Thruster angle: -1..+1 angle from min_thruster_angle to max_thruster_angle
         # Thruster Power: -1..0 off, 0..+1 throttle from 50% to 100% power. Engine can't work with less than 50% power
@@ -96,6 +78,12 @@ class GaussianRewardEnvironment:
         self.prev_shaping = None
         self.env_step = 0
         self.terminated_step = 0
+
+        if initial_force == 0.0:
+            self.enable_initial_force = False
+        else:
+            self.enable_initial_force = True
+            self.initial_force = initial_force
 
         self.reward_range = (-float("inf"), float("inf"))
 
@@ -129,6 +117,8 @@ class GaussianRewardEnvironment:
 
         x, y, v_x, v_y, theta, omega = state
 
+        thruster_theta += theta
+
         v_x_new = v_x + ((thruster_power * math.sin(thruster_theta)) / self.mass) * dt
         v_y_new = v_y + ((-thruster_power * math.cos(thruster_theta)) / self.mass + self.gravity) * dt
 
@@ -145,7 +135,7 @@ class GaussianRewardEnvironment:
         sigma = 0.5  # Standard deviation
         goal_state = np.array([0, 0, 0, 0, 0, 0])  # Goal state for position, velocities, and angle
 
-        x_position_reward_weight = 3
+        x_position_reward_weight = 1
         y_position_reward_weight = 1
         x_velocity_reward_weight = 1
         y_velocity_reward_weight = 1
@@ -165,11 +155,6 @@ class GaussianRewardEnvironment:
         # Calculate the Euclidean distance between the current state and the goal state
         distance = np.linalg.norm(current_state[:5] - goal_state[:5])
 
-        # if self.landing_space.is_bounded(state):
-        #     distance = np.linalg.norm(current_state - goal_state)
-        # else:
-        #     distance = np.linalg.norm(current_state[:2] - goal_state[:2])
-
         # Compute the Gaussian-inspired reward function
         exponent_term = np.exp(-(distance ** 2) / (2 * sigma ** 2))
         reward = beta * exponent_term + extra_reward
@@ -179,9 +164,7 @@ class GaussianRewardEnvironment:
     def check_termination(self, state):
         # Check if lander outside the observation space
         if not self.observation_space.is_bounded(state):
-            # steps_reward = -3 * abs(min(0, self.env_step - 30))
-
-            return True, 0  # + steps_reward
+            return True, 0
 
         # Check if lander inside the termination space
         if self.termination_space.is_bounded(state):
@@ -204,15 +187,18 @@ class GaussianRewardEnvironment:
             return True
 
     def initial_state(self):
-        initial_x = np.random.choice([-400, -300, -200, 200, 300, 400])
-        # initial_x = 200
-        # initial_y = -500.0
-        initial_y = -500.0
-        return np.array([initial_x, initial_y, 0.0, 0.0, 0.0, 0.0])
+        if self.enable_initial_force:
+            force_angle = np.random.uniform(-math.pi / 2, math.pi / 2)
+            force_magnitude = np.random.uniform(0, self.initial_force)
+            initial_x_velocity = force_magnitude * math.cos(force_angle) / self.mass
+            initial_y_velocity = force_magnitude * math.sin(force_angle) / self.mass
+        else:
+            initial_x_velocity = 0.0
+            initial_y_velocity = 0.0
 
-    def render(self):
-        # Render the environment (optional)
-        pass
+        initial_x_position = 0
+        initial_y_position = -500.0
+        return np.array([initial_x_position, initial_y_position, initial_x_velocity, initial_y_velocity, 0.0, 0.0])
 
     def get_params(self):
         # Export the parameters of the environment (optional)

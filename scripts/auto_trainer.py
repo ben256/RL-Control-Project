@@ -25,6 +25,7 @@ if __name__ == "__main__":
     parser.add_argument('--algorithm_name', type=str, default='DDPG')
     parser.add_argument('--notes', type=str, default='baseline environment with DDPG')
     parser.add_argument('--rm', type=str, default='rm1')
+    parser.add_argument('--initial_force', type=float, default=0.0)
     parser.add_argument('--save_frequency', type=int, default=100)
     parser.add_argument('--num_epochs', type=int, default=1001)
     parser.add_argument('--epoch', type=int, default=0)
@@ -43,6 +44,7 @@ if __name__ == "__main__":
     algorithm_name = args.algorithm_name
     notes = args.notes
     rm = args.rm
+    initial_force = args.initial_force
     save_frequency = args.save_frequency
     num_epochs = args.num_epochs
     epoch = args.epoch
@@ -77,7 +79,7 @@ if __name__ == "__main__":
     print("Created checkpoint and final directories")
 
     print("Creating environment and agent")
-    env = select_env(env_name)
+    env = select_env(env_name, initial_force=initial_force)
 
     agent = select_algo(algorithm_name, alpha=alpha, beta=beta, gamma=gamma, input_dims=env.observation_space.shape, tau=tau,
                         sigma=sigma, env=env, batch_size=batch_size, layer1_size=layer1_size, layer2_size=layer2_size,

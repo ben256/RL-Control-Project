@@ -10,17 +10,18 @@ from algorithms.select_algo import select_algo
 from helpers.graphs import plot_state_graph, plot_reward_graph
 
 project_dir = "C:\\dev\\University\\MECH3890\\environment-model"
-checkpoint_path = "C:\\dev\\University\\MECH3890\\environment-model\\models\\RO_RM_1\\model"  # If loading from checkpoint set this to the checkpoint path
+checkpoint_path = "C:\\dev\\University\\MECH3890\\environment-model\\models\\initial_force\\model"  # If loading from checkpoint set this to the checkpoint path
 torch.manual_seed(42)  # What is the meaning of life the universe and everything?
 
-training_name = "initial_force"
-env_name = "InitialForceEnvironment"
+training_name = "gr_baseline"
+env_name = "GaussianRewardEnvironment"
 algorithm_name = "DDPG"
 notes = "DDPG, Initial force env, initial x=0"
 
 load_from_checkpoint = False  # Whether to load from a checkpoint
+initial_force = 100000.0  # Initial force to apply to the lander
 save_frequency = 100  # How often to save the model
-num_epochs = 10001  # Number of epochs to train for
+num_epochs = 30001  # Number of epochs to train for
 epoch = 0  # Current epoch
 alpha = 0.0001  # Actor learning rate
 beta = 0.001  # Critic learning rate
@@ -36,7 +37,7 @@ if __name__ == "__main__":
 
     # Get the device
     assert torch.cuda.is_available(), "CUDA is not available"
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda")
     print("Using {} device".format(device))
 
     # Create the model directory if it doesn't exist
@@ -60,7 +61,7 @@ if __name__ == "__main__":
     print(f"Created checkpoint and final directories")
 
     print("Creating environment and agent")
-    env = select_env(env_name)
+    env = select_env(env_name, initial_force=initial_force)
 
     agent = select_algo(algorithm_name, alpha=alpha, beta=beta, gamma=gamma, input_dims=env.observation_space.shape, tau=tau,
                         sigma=sigma, env=env, batch_size=batch_size, layer1_size=layer1_size, layer2_size=layer2_size,

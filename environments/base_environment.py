@@ -9,7 +9,7 @@ from helpers.box import Box
 
 
 class BaseEnvironment:
-    def __init__(self, gravity=1.62, mass=15000.0):
+    def __init__(self, gravity=1.62, mass=15000.0, initial_force=0.0):
         # Initialize the state, and other parameters
         self.gravity = gravity
         self.mass = mass  # kg
@@ -78,6 +78,12 @@ class BaseEnvironment:
         self.prev_shaping = None
         self.env_step = 0
         self.terminated_step = 0
+
+        if initial_force == 0.0:
+            self.enable_initial_force = False
+        else:
+            self.enable_initial_force = True
+            self.initial_force = initial_force
 
         self.reward_range = (-float("inf"), float("inf"))
 
@@ -164,15 +170,22 @@ class BaseEnvironment:
 
     def check_truncation(self):
         # Check if the episode ended due to truncation
-        if self.env_step >= 500:
+        if self.env_step >= 400:
             return True
 
     def initial_state(self):
-        # initial_x = np.random.choice([-300, -200, -100, 100, 200, 300])
-        initial_x = 0
-        # initial_y = -500.0
-        initial_y = -500.0
-        return np.array([initial_x, initial_y, 0.0, 0.0, 0.0, 0.0])
+        if self.enable_initial_force:
+            force_angle = np.random.uniform(-math.pi / 2, math.pi / 2)
+            force_magnitude = np.random.uniform(0, self.initial_force)
+            initial_x_velocity = force_magnitude * math.cos(force_angle) / self.mass
+            initial_y_velocity = force_magnitude * math.sin(force_angle) / self.mass
+        else:
+            initial_x_velocity = 0.0
+            initial_y_velocity = 0.0
+
+        initial_x_position = 0
+        initial_y_position = -500.0
+        return np.array([initial_x_position, initial_y_position, initial_x_velocity, initial_y_velocity, 0.0, 0.0])
 
     def get_params(self):
         # Export the parameters of the environment (optional)
