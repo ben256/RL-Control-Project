@@ -2,6 +2,7 @@ import json
 import os
 import shutil
 import time
+import statistics
 
 import numpy as np
 import torch
@@ -13,7 +14,8 @@ sys.path.insert(1, os.path.abspath(os.getcwd()))
 from environments.select_env import select_env
 from algorithms.select_algo import select_algo
 from helpers.graphs import plot_state_graph, plot_reward_graph
-
+print("Sleeping for 3 hours to allow for remote debugging")
+time.sleep(10800)
 
 if __name__ == "__main__":
     start_time = time.time()
@@ -27,6 +29,7 @@ if __name__ == "__main__":
     parser.add_argument('--rm', type=str, default='rm1')
     parser.add_argument('--initial_force', type=float, default=0.0)
     parser.add_argument('--save_frequency', type=int, default=100)
+    parser.add_argument('--average_reward', type=bool, default=False)
     parser.add_argument('--num_epochs', type=int, default=1001)
     parser.add_argument('--epoch', type=int, default=0)
     parser.add_argument('--alpha', type=float, default=0.0001)
@@ -46,6 +49,7 @@ if __name__ == "__main__":
     rm = args.rm
     initial_force = args.initial_force
     save_frequency = args.save_frequency
+    average_reward = args.average_reward
     num_epochs = args.num_epochs
     epoch = args.epoch
     alpha = args.alpha
@@ -111,7 +115,10 @@ if __name__ == "__main__":
         terminated = False
         truncated = False
         record = False
-        score = 0
+        if average_reward:
+            score = []
+        else:
+            score = 0
         epoch_history = []
         agent.noise.reset()
 
@@ -127,9 +134,17 @@ if __name__ == "__main__":
             agent.remember(state, action, reward, new_state, terminated)
             agent.learn()
             state = new_state
-            score += reward
+            if average_reward:
+                score.append(reward)
+            else:
+                score += reward
 
-        score_history.append(score)
+        if average_reward:
+            score = sum(score) / len(score)
+            score_history.append(score)
+        else:
+            score_history.append(score)
+
         avg_score = np.mean(score_history[-100:])
 
         if epoch > 30:
@@ -147,8 +162,8 @@ if __name__ == "__main__":
 
             # Save score history to csv
             with open(os.path.join(training_dir, "score_history.csv"), "w") as f:
-                f.write("Epoch,Score,Average Score\n")
+                f.write("Epoch,Score,Average Score,Steps\n")
                 for i, score in enumerate(score_history):
-                    f.write(f"{i},{score},{np.mean(score_history[max(0, i - 100):i + 1])}\n")
+                    f.write(f"{i},{score},{np.mean(score_history[max(0, i - 100):i + 1])},{env.env_step}\n")
 
         print(f"Steps: {env.env_step}\tScore: {score:.5f}\tAverage Score: {avg_score:.5f}")

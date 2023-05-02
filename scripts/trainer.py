@@ -13,20 +13,20 @@ project_dir = "C:\\dev\\University\\MECH3890\\environment-model"
 checkpoint_path = "C:\\dev\\University\\MECH3890\\environment-model\\models\\initial_force\\model"  # If loading from checkpoint set this to the checkpoint path
 torch.manual_seed(42)  # What is the meaning of life the universe and everything?
 
-training_name = "gr_baseline"
+training_name = "test"
 env_name = "GaussianRewardEnvironment"
-algorithm_name = "DDPG"
-notes = "DDPG, Initial force env, initial x=0"
+algorithm_name = "JIT_DDPG"
+notes = "JIT DDPG, gr_env_ic1"
 
 load_from_checkpoint = False  # Whether to load from a checkpoint
-initial_force = 100000.0  # Initial force to apply to the lander
+initial_force = 0.0  # Initial force to apply to the lander
 save_frequency = 100  # How often to save the model
-num_epochs = 30001  # Number of epochs to train for
+num_epochs = 3001  # Number of epochs to train for
 epoch = 0  # Current epoch
-alpha = 0.0001  # Actor learning rate
-beta = 0.001  # Critic learning rate
-gamma = 0.9  # Discount factor (closer to 1 = more future reward)
-sigma = 0.2  # Noise factor
+alpha = 0.00008  # Actor learning rate
+beta = 0.0008  # Critic learning rate
+gamma = 0.95  # Discount factor (closer to 1 = more future reward)
+sigma = 0.25  # Noise factor
 tau = 0.001  # Soft update factor
 batch_size = 200  # Batch size
 layer1_size = 400  # Size of first hidden layer
@@ -36,7 +36,7 @@ if __name__ == "__main__":
     print("-=| Starting training |=-")
 
     # Get the device
-    assert torch.cuda.is_available(), "CUDA is not available"
+    assert torch.cuda.is_available(), "CUDA is not available!"
     device = torch.device("cuda")
     print("Using {} device".format(device))
 
@@ -132,8 +132,8 @@ if __name__ == "__main__":
 
             # Save score history to csv
             with open(os.path.join(training_dir, "score_history.csv"), "w") as f:
-                f.write("Epoch,Score,Average Score\n")
+                f.write("Epoch,Score,Average Score,Steps\n")
                 for i, score in enumerate(score_history):
-                    f.write(f"{i},{score},{np.mean(score_history[max(0, i - 100):i + 1])}\n")
+                    f.write(f"{i},{score},{np.mean(score_history[max(0, i - 100):i + 1])},{env.env_step}\n")
 
         print(f"Steps: {env.env_step}\tScore: {score:.5f}\tAverage Score: {avg_score:.5f}")

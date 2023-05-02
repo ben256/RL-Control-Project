@@ -29,9 +29,9 @@ class BaseRewardMachineEnvironment:
             [
                 -550,  # x (lander)
                 -550,  # y (lander)
-                -35.0,  # dx/dt (lander)
-                -35.0,  # dy/dt (lander)
-                -2 * math.pi,  # theta (lander)
+                -25.0,  # dx/dt (lander)
+                -25.0,  # dy/dt (lander)
+                -math.pi,  # theta (lander)
                 -1.0,  # dtheta/dt (lander)
             ]
         ).astype(np.float32)
@@ -39,9 +39,9 @@ class BaseRewardMachineEnvironment:
             [
                 550,  # x (lander)
                 50,  # y (lander)
-                35.0,  # dx/dt (lander)
-                35.0,  # dy/dt (lander)
-                2 * math.pi,  # theta (lander)
+                25.0,  # dx/dt (lander)
+                25.0,  # dy/dt (lander)
+                math.pi,  # theta (lander)
                 1.0,  # dtheta/dt (lander)
             ]
         ).astype(np.float32)
