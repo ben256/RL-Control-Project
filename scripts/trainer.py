@@ -1,6 +1,7 @@
 import json
 import os
 import shutil
+import time
 
 import numpy as np
 import torch
@@ -13,12 +14,13 @@ project_dir = "C:\\dev\\University\\MECH3890\\environment-model"
 checkpoint_path = "C:\\dev\\University\\MECH3890\\environment-model\\models\\initial_force\\model"  # If loading from checkpoint set this to the checkpoint path
 torch.manual_seed(42)  # What is the meaning of life the universe and everything?
 
-training_name = "test"
+training_name = "gr_env_ic1"
 env_name = "GaussianRewardEnvironment"
 algorithm_name = "JIT_DDPG"
 notes = "JIT DDPG, gr_env_ic1"
 
 load_from_checkpoint = False  # Whether to load from a checkpoint
+average_reward = True  # Whether to average the reward over 100 episodes
 initial_force = 0.0  # Initial force to apply to the lander
 save_frequency = 100  # How often to save the model
 num_epochs = 3001  # Number of epochs to train for
@@ -26,8 +28,8 @@ epoch = 0  # Current epoch
 alpha = 0.00008  # Actor learning rate
 beta = 0.0008  # Critic learning rate
 gamma = 0.95  # Discount factor (closer to 1 = more future reward)
-sigma = 0.25  # Noise factor
-tau = 0.001  # Soft update factor
+sigma = 0.20  # Noise factor
+tau = 0.01  # Soft update factor
 batch_size = 200  # Batch size
 layer1_size = 400  # Size of first hidden layer
 layer2_size = 300  # Size of second hidden layer
@@ -88,6 +90,9 @@ if __name__ == "__main__":
     best_score = env.reward_range[0]
     score_history = []
     state_history = []
+    step_history = []
+
+    start_time = time.time()
 
     for epoch in range(epoch, num_epochs):
         print('-' * 10)
@@ -96,7 +101,10 @@ if __name__ == "__main__":
         terminated = False
         truncated = False
         record = False
-        score = 0
+        if average_reward:
+            score = []
+        else:
+            score = 0
         epoch_history = []
         agent.noise.reset()
 
@@ -112,10 +120,18 @@ if __name__ == "__main__":
             agent.remember(state, action, reward, new_state, terminated)
             agent.learn()
             state = new_state
-            score += reward
+            if average_reward:
+                score.append(reward)
+            else:
+                score += reward
 
-        score_history.append(score)
+        if average_reward:
+            score = sum(score) / len(score)
+            score_history.append(score)
+        else:
+            score_history.append(score)
         avg_score = np.mean(score_history[-100:])
+        step_history.append(env.env_step)
 
         if epoch > 30:
             if avg_score > best_score:
@@ -134,6 +150,9 @@ if __name__ == "__main__":
             with open(os.path.join(training_dir, "score_history.csv"), "w") as f:
                 f.write("Epoch,Score,Average Score,Steps\n")
                 for i, score in enumerate(score_history):
-                    f.write(f"{i},{score},{np.mean(score_history[max(0, i - 100):i + 1])},{env.env_step}\n")
+                    f.write(f"{i},{score},{np.mean(score_history[max(0, i - 100):i + 1])},{step_history[i]}\n")
 
         print(f"Steps: {env.env_step}\tScore: {score:.5f}\tAverage Score: {avg_score:.5f}")
+
+    end_time = time.time()
+    print(f"Training took {end_time - start_time} seconds")
