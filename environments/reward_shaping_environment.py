@@ -10,11 +10,15 @@ from helpers.box import Box
 
 
 class RewardShapingEnvironment:
-    def __init__(self, gravity=1.62, mass=15000.0, initial_force=0.0):
+    def __init__(self, gravity=1.62, mass=15000.0, initial_velocity=False, initial_position=False, test=False):
         # Initialise the state, and other parameters
         self.gravity = gravity
         self.mass = mass  # kg
         self.moment_of_inertia = 80000.0  # kg m^2
+
+        self.test = test
+        self.initial_velocity = initial_velocity
+        self.initial_position = initial_position
 
         self.max_thrust = 30000.0  # N
         self.min_thrust = 0  # N
@@ -91,17 +95,14 @@ class RewardShapingEnvironment:
         self.env_step = 0
         self.terminated_step = 0
 
-        if initial_force == 0.0:
-            self.enable_initial_force = False
-        else:
-            self.enable_initial_force = True
-            self.initial_force = initial_force
-
         self.reward_range = (-float("inf"), float("inf"))
 
-    def reset(self):
+    def reset(self, initial_state=None):
         # Reset the environment to its initial state
-        self.state = self.initial_state()
+        if initial_state is None:
+            self.state = self.initial_state()
+        else:
+            self.state = initial_state
         self.prev_shaping = None
         self.env_step = 0
         self.terminated = False
@@ -112,13 +113,13 @@ class RewardShapingEnvironment:
         # Update the state of the environment based on the actions taken by the agent
         new_state = self.update_state(self.state, action)
 
-        self.terminated, extra_reward = self.check_termination(new_state)
+        self.terminated, extra_reward, success = self.check_termination(new_state)
         self.truncated = self.check_truncation()
         self.state = new_state
         reward = self.calculate_reward(new_state, extra_reward)
         self.env_step += 1
 
-        return new_state, reward, self.terminated, self.truncated, {}
+        return new_state, reward, self.terminated, self.truncated, {"success": success}
 
     def update_state(self, state, action, dt=1, l=1):
         # Update the state of the environment based on the actions taken by the agent
@@ -160,14 +161,15 @@ class RewardShapingEnvironment:
     def check_termination(self, state):
         # Check if lander outside the observation space
         if not self.observation_space.is_bounded(state):
-            return True, -100
+            return True, -100, 0
 
         # Check if lander inside the termination space
         if self.termination_space.is_bounded(state):
-            print("Landed successfully!")
-            return True, 100
+            if not self.test:
+                print("Landed successfully!")
+            return True, 100, 1
 
-        return False, 0
+        return False, 0, 0
 
     def check_truncation(self):
         # Check if the episode ended due to truncation
@@ -175,16 +177,18 @@ class RewardShapingEnvironment:
             return True
 
     def initial_state(self):
-        if self.enable_initial_force:
-            force_angle = np.random.uniform(-math.pi / 2, math.pi / 2)
-            force_magnitude = np.random.uniform(0, self.initial_force)
-            initial_x_velocity = force_magnitude * math.cos(force_angle) / self.mass
-            initial_y_velocity = force_magnitude * math.sin(force_angle) / self.mass
+        if self.initial_velocity:
+            initial_x_velocity = np.random.uniform(-5, 5)
+            initial_y_velocity = np.random.uniform(-5, 5)
         else:
-            initial_x_velocity = 0.0
-            initial_y_velocity = 0.0
+            initial_x_velocity = 0
+            initial_y_velocity = 0
 
-        initial_x_position = 0
+        if self.initial_position:
+            initial_x_position = np.random.uniform(-100, 100)
+        else:
+            initial_x_position = 0
+
         initial_y_position = -500.0
         return np.array([initial_x_position, initial_y_position, initial_x_velocity, initial_y_velocity, 0.0, 0.0])
 

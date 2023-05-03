@@ -37,8 +37,7 @@ if __name__ == "__main__":
     print("-=| Starting testing |=-")
 
     # Get the device
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device = "cpu"
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Using {} device".format(device))
 
     # Create the model directory if it doesn't exist

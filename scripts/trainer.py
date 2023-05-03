@@ -63,7 +63,7 @@ if __name__ == "__main__":
     print(f"Created checkpoint and final directories")
 
     print("Creating environment and agent")
-    env = select_env(env_name, initial_force=initial_force)
+    env = select_env(env_name, initial_force=initial_force, initial_position=initial_position)
 
     agent = select_algo(algorithm_name, alpha=alpha, beta=beta, gamma=gamma, input_dims=env.observation_space.shape, tau=tau,
                         sigma=sigma, env=env, batch_size=batch_size, layer1_size=layer1_size, layer2_size=layer2_size,
