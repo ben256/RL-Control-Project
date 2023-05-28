@@ -6,3 +6,4 @@ In this repo contains the following:
 - The code for the dynamic model and environment (in /environments)
 - An implementation of the DDPG algorithm (in /algorithms)
 - The raw data and plots from the experiments (in /tests)
+- An example of a trained model (in /models)
