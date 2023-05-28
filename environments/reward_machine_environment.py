@@ -12,11 +12,15 @@ from helpers.reward_machines.reward_machine import RewardMachine
 
 
 class BaseRewardMachineEnvironment:
-    def __init__(self, gravity=1.62, mass=15000.0):
-        # Initialize the state, and other parameters
+    def __init__(self, gravity=1.62, mass=15000.0, initial_velocity=False, initial_position=False, test=False):
+        # Initialise the state, and other parameters
         self.gravity = gravity
         self.mass = mass  # kg
         self.moment_of_inertia = 80000.0  # kg m^2
+
+        self.test = test
+        self.initial_velocity = initial_velocity
+        self.initial_position = initial_position
 
         self.max_thrust = 30000.0  # N
         self.min_thrust = 0  # N
@@ -29,20 +33,20 @@ class BaseRewardMachineEnvironment:
             [
                 -550,  # x (lander)
                 -550,  # y (lander)
-                -25.0,  # dx/dt (lander)
-                -25.0,  # dy/dt (lander)
-                -math.pi,  # theta (lander)
-                -1.0,  # dtheta/dt (lander)
+                -40.0,  # dx/dt (lander)
+                -40.0,  # dy/dt (lander)
+                -2*math.pi,  # theta (lander)
+                -4.0,  # dtheta/dt (lander)
             ]
         ).astype(np.float32)
         high = np.array(
             [
                 550,  # x (lander)
                 50,  # y (lander)
-                25.0,  # dx/dt (lander)
-                25.0,  # dy/dt (lander)
-                math.pi,  # theta (lander)
-                1.0,  # dtheta/dt (lander)
+                40.0,  # dx/dt (lander)
+                40.0,  # dy/dt (lander)
+                2 * math.pi,  # theta (lander)
+                4.0,  # dtheta/dt (lander)
             ]
         ).astype(np.float32)
         self.observation_space = Box(low, high)
@@ -52,41 +56,23 @@ class BaseRewardMachineEnvironment:
             [
                 -50,  # x (lander)
                 -50,  # y (lander)
-                -1.0,  # dx/dt (lander)
-                -1.0,  # dy/dt (lander)
+                -2.0,  # dx/dt (lander)
+                -2.0,  # dy/dt (lander)
                 -math.pi / 6,  # theta (lander)
-                -1.0,  # dtheta/dt (lander)
+                -0.3,  # dtheta/dt (lander)
             ]
         ).astype(np.float32)
         high = np.array(
             [
                 50,  # x (lander)
                 50,  # y (lander)
-                1.0,  # dx/dt (lander)
-                1.0,  # dy/dt (lander)
+                2.0,  # dx/dt (lander)
+                2.0,  # dy/dt (lander)
                 math.pi / 6,  # theta (lander)
-                1.0,  # dtheta/dt (lander)
+                0.3,  # dtheta/dt (lander)
             ]
         ).astype(np.float32)
         self.termination_space = Box(low, high)
-
-        high = np.array([
-            50,  # x (lander)
-            50,  # y (lander)
-            None,  # dx/dt (lander)
-            None,  # dy/dt (lander)
-            None,  # theta (lander)
-            None,  # dtheta/dt (lander)
-        ]).astype(np.float32)
-        low = np.array([
-            -50,  # x (lander)
-            -100,  # y (lander)
-            None,  # dx/dt (lander)
-            None,  # dy/dt (lander)
-            None,  # theta (lander)
-            None,  # dtheta/dt (lander)
-        ]).astype(np.float32)
-        self.landing_space = Box(low, high)
 
         # Action is two floats [thruster angle, thruster power]
         # Thruster angle: -1..+1 angle from min_thruster_angle to max_thruster_angle
@@ -102,9 +88,12 @@ class BaseRewardMachineEnvironment:
 
         self.reward_range = (-float("inf"), float("inf"))
 
-    def reset(self):
+    def reset(self, initial_state=None):
         # Reset the environment to its initial state
-        self.state = self.initial_state()
+        if initial_state is None:
+            self.state = self.initial_state()
+        else:
+            self.state = initial_state
         self.prev_shaping = None
         self.env_step = 0
         self.terminated = False
@@ -115,7 +104,7 @@ class BaseRewardMachineEnvironment:
         # Update the state of the environment based on the actions taken by the agent
         new_state = self.update_state(self.state, action)
 
-        self.terminated, extra_reward = self.check_termination(new_state)
+        self.terminated, extra_reward, success = self.check_termination(new_state)
         self.truncated = self.check_truncation()
         self.state = new_state
         reward = self.calculate_reward(new_state, extra_reward)
@@ -151,9 +140,9 @@ class BaseRewardMachineEnvironment:
     def check_termination(self, state):
         # Check if lander outside the observation space
         if not self.observation_space.is_bounded(state):
-            return True, 0
+            return True, 0, 0
         else:
-            return False, 0
+            return False, 0, 0
 
     def check_truncation(self):
         # Check if the episode ended due to truncation
@@ -189,9 +178,20 @@ class BaseRewardMachineEnvironment:
         return events
 
     def initial_state(self):
-        initial_x = randint(-100, 100)
-        initial_y = -500.0
-        return np.array([initial_x, initial_y, 0.0, 0.0, 0.0, 0.0])
+        if self.initial_velocity:
+            initial_x_velocity = np.random.uniform(-5, 5)
+            initial_y_velocity = np.random.uniform(-5, 5)
+        else:
+            initial_x_velocity = 0
+            initial_y_velocity = 0
+
+        if self.initial_position:
+            initial_x_position = np.random.uniform(-100, 100)
+        else:
+            initial_x_position = 0
+
+        initial_y_position = -500.0
+        return np.array([initial_x_position, initial_y_position, initial_x_velocity, initial_y_velocity, 0.0, 0.0])
 
     def get_params(self):
         # Export the parameters of the environment (optional)
@@ -313,6 +313,6 @@ class RewardMachineEnvironmentWrapper:
 
 
 class RewardMachineEnvironment(RewardMachineEnvironmentWrapper):
-    def __init__(self, rm_filepath, **kwargs):
-        base_env = BaseRewardMachineEnvironment(**kwargs)
+    def __init__(self, rm_filepath, initial_position, initial_velocity):
+        base_env = BaseRewardMachineEnvironment(initial_velocity=initial_velocity, initial_position=initial_position)
         super().__init__(base_env, rm_filepath)

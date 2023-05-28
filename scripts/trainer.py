@@ -11,25 +11,26 @@ from algorithms.select_algo import select_algo
 from helpers.graphs import plot_state_graph, plot_reward_graph
 
 project_dir = "C:\\dev\\University\\MECH3890\\environment-model"
-checkpoint_path = "C:\\dev\\University\\MECH3890\\environment-model\\models\\initial_force\\model"  # If loading from checkpoint set this to the checkpoint path
+checkpoint_path = "C:\\dev\\University\\MECH3890\\environment-model\\models\\rs_env_ic3\\model"  # If loading from checkpoint set this to the checkpoint path
 torch.manual_seed(42)  # What is the meaning of life the universe and everything?
 
-training_name = "gr_env_ic1"
-env_name = "GaussianRewardEnvironment"
+training_name = "base_env_ic3_b"
+env_name = "BaseEnvironment"
 algorithm_name = "JIT_DDPG"
-notes = "JIT DDPG, gr_env_ic1"
+notes = "JIT DDPG, test"
 
 load_from_checkpoint = False  # Whether to load from a checkpoint
 average_reward = True  # Whether to average the reward over 100 episodes
-initial_force = 0.0  # Initial force to apply to the lander
+initial_position = True  # Whether to set the initial position
+initial_velocity = False  # Whether to set the initial velocity
 save_frequency = 100  # How often to save the model
-num_epochs = 3001  # Number of epochs to train for
+num_epochs = 5001  # Number of epochs to train for
 epoch = 0  # Current epoch
 alpha = 0.00008  # Actor learning rate
 beta = 0.0008  # Critic learning rate
 gamma = 0.95  # Discount factor (closer to 1 = more future reward)
 sigma = 0.20  # Noise factor
-tau = 0.01  # Soft update factor
+tau = 0.001  # Soft update factor
 batch_size = 200  # Batch size
 layer1_size = 400  # Size of first hidden layer
 layer2_size = 300  # Size of second hidden layer
@@ -63,7 +64,7 @@ if __name__ == "__main__":
     print(f"Created checkpoint and final directories")
 
     print("Creating environment and agent")
-    env = select_env(env_name, initial_force=initial_force, initial_position=initial_position)
+    env = select_env(env_name, initial_position=initial_position, initial_velocity=initial_velocity)
 
     agent = select_algo(algorithm_name, alpha=alpha, beta=beta, gamma=gamma, input_dims=env.observation_space.shape, tau=tau,
                         sigma=sigma, env=env, batch_size=batch_size, layer1_size=layer1_size, layer2_size=layer2_size,

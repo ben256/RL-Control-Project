@@ -14,21 +14,24 @@ project_dir = "C:\\dev\\University\\MECH3890\\environment-model"
 checkpoint_path = "C:\\dev\\University\\MECH3890\\environment-model\\models\\RO_RM_1\\model"  # If loading from checkpoint set this to the checkpoint path
 torch.manual_seed(42)  # What is the meaning of life the universe and everything?
 
-training_name = "test_RO_RM_16"
+training_name = "rm_env_ic1"
 env_name = "RewardMachineEnvironment"
-algorithm_name = "JIT_DDPG"
-notes = "basically the same as RO_RM_12"
-rm = 'rm6'
+algorithm_name = "DDPG"
+notes = "rm_env_ic1"
+rm = "rm7"
 
 load_from_checkpoint = False  # Whether to load from a checkpoint
+average_reward = False  # Whether to average the reward over 100 episodes
+initial_position = False  # Whether to set the initial position
+initial_velocity = False  # Whether to set the initial velocity
 save_frequency = 100  # How often to save the model
-num_epochs = 50001  # Number of epochs to train for
+num_epochs = 10001  # Number of epochs to train for
 epoch = 0  # Current epoch
 alpha = 0.0001  # Actor learning rate
 beta = 0.001  # Critic learning rate
 gamma = 0.9  # Discount factor (closer to 1 = more future reward)
-sigma = 0.2  # Noise factor
-tau = 0.001  # Soft update factor
+sigma = 0.25  # Noise factor
+tau = 0.003  # Soft update factor
 batch_size = 200  # Batch size
 layer1_size = 400  # Size of first hidden layer
 layer2_size = 300  # Size of second hidden layer
@@ -37,8 +40,8 @@ if __name__ == "__main__":
     print("-=| Starting training |=-")
 
     # Get the device
-    assert torch.cuda.is_available(), "CUDA is not available"
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    assert torch.cuda.is_available(), "CUDA is not available!"
+    device = torch.device("cuda")
     print("Using {} device".format(device))
 
     # Create the model directory if it doesn't exist
@@ -64,11 +67,11 @@ if __name__ == "__main__":
     print("Creating environment and agent")
     rm_filename = "{}.txt".format(rm)
     rm_filepath = os.path.join(project_dir, "helpers/reward_machines/txt_files", rm_filename)
-    env = select_env(env_name, rm_filepath=rm_filepath)
+    env = select_env(env_name, rm_filepath=rm_filepath, initial_position=initial_position, initial_velocity=initial_velocity)
 
     agent = select_algo(algorithm_name, alpha=alpha, beta=beta, gamma=gamma, input_dims=env.observation_space.shape, tau=tau,
                         sigma=sigma, env=env, batch_size=batch_size, layer1_size=layer1_size, layer2_size=layer2_size,
-                        n_actions=env.action_space.shape[0], save_dir=model_checkpoint_dir, model_dir=checkpoint_path)
+                        n_actions=env.action_space.shape[0], save_dir=model_checkpoint_dir, model_dir=model_checkpoint_dir)
 
     if load_from_checkpoint:
         agent.load_models()
@@ -91,6 +94,9 @@ if __name__ == "__main__":
     best_score = env.reward_range[0]
     score_history = []
     state_history = []
+    step_history = []
+
+    start_time = time.time()
 
     for epoch in range(epoch, num_epochs):
         print('-' * 10)
@@ -110,7 +116,7 @@ if __name__ == "__main__":
         while not (terminated or truncated):
             if record:
                 epoch_history.append(state)
-            # time the choose action function
+
             action = agent.choose_action(state)
             new_state_dict, reward, terminated, truncated, info = env.step(action)
             new_state = new_state_dict['features']
@@ -137,6 +143,7 @@ if __name__ == "__main__":
             score += reward
 
         score_history.append(score)
+        step_history.append(env.env_step)
         if info:
             if "rm_state_id" in info:
                 state_history.append(info["rm_state_id"])
@@ -159,6 +166,10 @@ if __name__ == "__main__":
             with open(os.path.join(training_dir, "score_history.csv"), "w") as f:
                 f.write("Epoch,Score,Average Score,Steps,RM State\n")
                 for i, score in enumerate(score_history):
-                    f.write(f"{i},{score},{np.mean(score_history[max(0, i - 100):i + 1])},{env.env_step},{state_history[i]}\n")
+                    f.write(f"{i},{score},{np.mean(score_history[max(0, i - 100):i + 1])},{step_history[i]},{state_history[i]}\n")
 
-        print(f"Steps: {env.env_step}\tScore: {score:.5f}\tAverage Score: {avg_score:.5f}")
+
+        print("Steps: {}\tScore: {:.5f}\tAverage Score: {:.5f}".format(env.env_step, score, avg_score))
+
+    end_time = time.time()
+    print(f"Training took {end_time - start_time} seconds")
